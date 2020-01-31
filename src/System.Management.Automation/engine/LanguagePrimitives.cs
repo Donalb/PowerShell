@@ -21,7 +21,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 
-using Dbg = System.Management.Automation.Diagnostics;
 using MethodCacheEntry = System.Management.Automation.DotNetAdapter.MethodCacheEntry;
 #if !UNIX
 using System.DirectoryServices;
@@ -1324,7 +1323,7 @@ namespace System.Management.Automation
 
         internal static bool IsCimIntrinsicScalarType(Type type)
         {
-            Dbg.Assert(type != null, "Caller should verify type != null");
+            Diagnostics.Assert(type != null, "Caller should verify type != null");
 
             // using type code we can cover all intrinsic types from the table
             // on page 11 of DSP0004, except:
@@ -3359,7 +3358,9 @@ namespace System.Management.Automation
         {
             typeConversion.WriteLine("Converting to PSReference.");
 
-            Dbg.Assert(valueToConvert != null, "[ref]$null cast should be handler earlier with a separate ConvertNullToPSReference method");
+            Diagnostics.Assert(
+                valueToConvert != null,
+                "[ref]$null cast should be handler earlier with a separate ConvertNullToPSReference method");
 
             return PSReference.CreateInstance(valueToConvert, valueToConvert.GetType());
         }
@@ -4353,7 +4354,8 @@ namespace System.Management.Automation
                 }
                 else
                 {
-                    Dbg.Assert(((Delegate)(data.Converter)).GetMethodInfo().Equals(converter.GetMethodInfo()),
+                    Diagnostics.Assert(
+                        ((Delegate)data.Converter).GetMethodInfo().Equals(converter.GetMethodInfo()),
                         "Existing conversion isn't the same as new conversion");
                 }
             }
@@ -4733,7 +4735,9 @@ namespace System.Management.Automation
                 // Now try converting PSObject.Base instead.
                 valueToConvert = PSObject.Base(valueToConvert);
 
-                Dbg.Assert(valueToConvert != AutomationNull.Value, "PSObject.Base converts AutomationNull.Value to null");
+                Diagnostics.Assert(
+                    valueToConvert != AutomationNull.Value,
+                    "PSObject.Base converts AutomationNull.Value to null");
 
                 if (valueToConvert == null)
                 {
@@ -4906,7 +4910,8 @@ namespace System.Management.Automation
 
             if (toType == typeof(string))
             {
-                Dbg.Assert(!LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(fromType)) || fromType.IsEnum,
+                Diagnostics.Assert(
+                    !IsNumeric(GetTypeCode(fromType)) || fromType.IsEnum,
                     "Number to string should be cached on initialization of cache table");
                 return CacheConversion<string>(fromType, toType, LanguagePrimitives.ConvertNonNumericToString, ConversionRank.ToString);
             }
