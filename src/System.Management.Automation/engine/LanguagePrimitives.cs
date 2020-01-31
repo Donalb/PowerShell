@@ -291,7 +291,8 @@ namespace System.Management.Automation
     /// <summary>
     /// Defines language support methods.
     /// </summary>
-    [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "Refactoring LanguagePrimitives takes lot of dev/test effort. Since V1 code is already shipped, we tend to exclude this message.")]
+    [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling",
+        Justification = "Refactoring LanguagePrimitives takes lot of dev/test effort. Since V1 code is already shipped, we tend to exclude this message.")]
     public static class LanguagePrimitives
     {
         [TraceSource("ETS", "Extended Type System")]
@@ -447,7 +448,8 @@ namespace System.Management.Automation
         /// <param name="obj">
         /// IEnumerable or IEnumerable-like object
         /// </param>
-        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message.")]
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj",
+            Justification = "Since V1 code is already shipped, excluding this message.")]
         public static bool IsObjectEnumerable(object obj)
             => IsTypeEnumerable(PSObject.Base(obj)?.GetType());
 
@@ -457,7 +459,8 @@ namespace System.Management.Automation
         /// <param name="obj">
         /// IEnumerable or IEnumerable-like object
         /// </param>
-        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message.")]
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj",
+            Justification = "Since V1 code is already shipped, excluding this message.")]
         public static IEnumerable GetEnumerable(object obj)
         {
             obj = PSObject.Base(obj);
@@ -531,7 +534,8 @@ namespace System.Management.Automation
         /// IEnumerable or IEnumerable-like object
         /// </param>
         /// <exception cref="ExtendedTypeSystemException">When the act of getting the enumerator throws an exception.</exception>
-        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons.")]
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj",
+            Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons.")]
         public static IEnumerator GetEnumerator(object obj)
         {
             var result = s_getEnumeratorSite.Target.Invoke(s_getEnumeratorSite, obj);
@@ -954,7 +958,8 @@ namespace System.Management.Automation
         /// </summary>
         /// <param name="obj">Obj to verify if it is true.</param>
         /// <returns>True if obj is true.</returns>
-        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons")]
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj",
+            Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons")]
         public static bool IsTrue(object obj)
         {
             // null is a valid argument - it converts to false...
