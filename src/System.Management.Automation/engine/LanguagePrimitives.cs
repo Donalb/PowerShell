@@ -84,9 +84,7 @@ namespace System.Management.Automation
         /// <param name="destinationType">One of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public virtual bool CanConvertFrom(PSObject sourceValue, Type destinationType)
-        {
-            return this.CanConvertFrom(GetSourceValueAsObject(sourceValue), destinationType);
-        }
+            => CanConvertFrom(GetSourceValueAsObject(sourceValue), destinationType);
 
         /// <summary>
         /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
@@ -108,10 +106,12 @@ namespace System.Management.Automation
         /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>The <paramref name="sourceValue"/> parameter converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
         /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
-        public virtual object ConvertFrom(PSObject sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-        {
-            return this.ConvertFrom(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
-        }
+        public virtual object ConvertFrom(
+            PSObject sourceValue,
+            Type destinationType,
+            IFormatProvider formatProvider,
+            bool ignoreCase)
+                => ConvertFrom(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
 
         /// <summary>
         /// Returns true if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter.
@@ -128,9 +128,7 @@ namespace System.Management.Automation
         /// <param name="destinationType">Type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public virtual bool CanConvertTo(PSObject sourceValue, Type destinationType)
-        {
-            return this.CanConvertTo(GetSourceValueAsObject(sourceValue), destinationType);
-        }
+            => CanConvertTo(GetSourceValueAsObject(sourceValue), destinationType);
 
         /// <summary>
         /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
@@ -141,7 +139,11 @@ namespace System.Management.Automation
         /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>SourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
         /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
-        public abstract object ConvertTo(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase);
+        public abstract object ConvertTo(
+            object sourceValue,
+            Type destinationType,
+            IFormatProvider formatProvider,
+            bool ignoreCase);
 
         /// <summary>
         /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
@@ -152,10 +154,12 @@ namespace System.Management.Automation
         /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>SourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
         /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
-        public virtual object ConvertTo(PSObject sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-        {
-            return this.ConvertTo(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
-        }
+        public virtual object ConvertTo(
+            PSObject sourceValue,
+            Type destinationType,
+            IFormatProvider formatProvider,
+            bool ignoreCase)
+                => ConvertTo(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
     }
 
     /// <summary>
@@ -169,21 +173,12 @@ namespace System.Management.Automation
     public class ConvertThroughString : PSTypeConverter
     {
         /// <summary>
-        /// This will return false only if sourceValue is string.
+        /// This will return false only if sourceValue is string, to avoid recursion.
         /// </summary>
         /// <param name="sourceValue">Value to convert from.</param>
         /// <param name="destinationType">Ignored.</param>
         /// <returns>False only if sourceValue is string.</returns>
-        public override bool CanConvertFrom(object sourceValue, Type destinationType)
-        {
-            // This if avoids infinite recursion.
-            if (sourceValue is string)
-            {
-                return false;
-            }
-
-            return true;
-        }
+        public override bool CanConvertFrom(object sourceValue, Type destinationType) => !(sourceValue is string);
 
         /// <summary>
         /// Converts to destinationType by first converting sourceValue to string
@@ -195,7 +190,11 @@ namespace System.Management.Automation
         /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>SourceValue converted to destinationType.</returns>
         /// <exception cref="PSInvalidCastException">When no conversion was possible.</exception>
-        public override object ConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
+        public override object ConvertFrom(
+            object sourceValue,
+            Type destinationType,
+            IFormatProvider formatProvider,
+            bool ignoreCase)
         {
             string sourceAsString = (string)LanguagePrimitives.ConvertTo(sourceValue, typeof(string), formatProvider);
             return LanguagePrimitives.ConvertTo(sourceAsString, destinationType, formatProvider);
@@ -208,10 +207,7 @@ namespace System.Management.Automation
         /// <param name="sourceValue">The value to convert from.</param>
         /// <param name="destinationType">The value to convert from.</param>
         /// <returns>False.</returns>
-        public override bool CanConvertTo(object sourceValue, Type destinationType)
-        {
-            return false;
-        }
+        public override bool CanConvertTo(object sourceValue, Type destinationType) => false;
 
         /// <summary>
         /// Throws NotSupportedException, since this converter is not designed to be used to
@@ -223,10 +219,12 @@ namespace System.Management.Automation
         /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>This method does not return a value.</returns>
         /// <exception cref="NotSupportedException">NotSupportedException is always thrown.</exception>
-        public override object ConvertTo(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-        {
-            throw PSTraceSource.NewNotSupportedException();
-        }
+        public override object ConvertTo(
+            object sourceValue,
+            Type destinationType,
+            IFormatProvider formatProvider,
+            bool ignoreCase)
+                => throw PSTraceSource.NewNotSupportedException();
     }
     #endregion public type converters
 
@@ -390,9 +388,7 @@ namespace System.Management.Automation
             #region IEnumerable Members
 
             public IEnumerator GetEnumerator()
-            {
-                return (IEnumerator)_getEnumerator.Invoke(null, new object[] { _enumerable });
-            }
+                => (IEnumerator)_getEnumerator.Invoke(null, new object[] { _enumerable });
 
             #endregion
         }
@@ -411,7 +407,8 @@ namespace System.Management.Automation
         }
 
         private delegate IEnumerable GetEnumerableDelegate(object obj);
-        private static Dictionary<Type, GetEnumerableDelegate> s_getEnumerableCache = new Dictionary<Type, GetEnumerableDelegate>(32);
+        private static readonly Dictionary<Type, GetEnumerableDelegate> s_getEnumerableCache =
+            new Dictionary<Type, GetEnumerableDelegate>(32);
 
         private static GetEnumerableDelegate GetOrCalculateEnumerable(Type type)
         {
@@ -442,12 +439,7 @@ namespace System.Management.Automation
         }
 
         internal static bool IsTypeEnumerable(Type type)
-        {
-            if (type == null) { return false; }
-
-            GetEnumerableDelegate getEnumerable = GetOrCalculateEnumerable(type);
-            return (getEnumerable != LanguagePrimitives.ReturnNullEnumerable);
-        }
+            => type != null && GetOrCalculateEnumerable(type) != ReturnNullEnumerable;
 
         /// <summary>
         /// Returns True if the language considers obj to be IEnumerable.
@@ -457,9 +449,7 @@ namespace System.Management.Automation
         /// </param>
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message.")]
         public static bool IsObjectEnumerable(object obj)
-        {
-            return IsTypeEnumerable(PSObject.Base(obj)?.GetType());
-        }
+            => IsTypeEnumerable(PSObject.Base(obj)?.GetType());
 
         /// <summary>
         /// Retrieves the IEnumerable of obj or null if the language does not consider obj to be IEnumerable.
@@ -477,15 +467,9 @@ namespace System.Management.Automation
             return getEnumerable(obj);
         }
 
-        private static IEnumerable ReturnNullEnumerable(object obj)
-        {
-            return null;
-        }
+        private static IEnumerable ReturnNullEnumerable(object obj) => null;
 
-        private static IEnumerable DataTableEnumerable(object obj)
-        {
-            return (((DataTable)obj).Rows);
-        }
+        private static IEnumerable DataTableEnumerable(object obj) => ((DataTable)obj).Rows;
 
         private static IEnumerable TypicalEnumerable(object obj)
         {
@@ -592,9 +576,7 @@ namespace System.Management.Automation
         /// <param name="second">Object to compare first to.</param>
         /// <returns>True if first is equal to the second.</returns>
         public static new bool Equals(object first, object second)
-        {
-            return Equals(first, second, false, CultureInfo.InvariantCulture);
-        }
+            => Equals(first, second, false, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Used to compare two objects for equality converting the second to the type of the first, if required.
@@ -605,9 +587,7 @@ namespace System.Management.Automation
         /// to specify the type of string comparison </param>
         /// <returns>True if first is equal to the second.</returns>
         public static bool Equals(object first, object second, bool ignoreCase)
-        {
-            return Equals(first, second, ignoreCase, CultureInfo.InvariantCulture);
-        }
+             => Equals(first, second, ignoreCase, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Used to compare two objects for equality converting the second to the type of the first, if required.
@@ -739,9 +719,7 @@ namespace System.Management.Automation
         /// to the type of <paramref name="first"/>.
         /// </exception>
         public static int Compare(object first, object second)
-        {
-            return LanguagePrimitives.Compare(first, second, false, CultureInfo.InvariantCulture);
-        }
+            => Compare(first, second, ignoreCase: false, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Compare first and second, converting second to the
@@ -757,9 +735,7 @@ namespace System.Management.Automation
         /// to the type of <paramref name="first"/>.
         /// </exception>
         public static int Compare(object first, object second, bool ignoreCase)
-        {
-            return LanguagePrimitives.Compare(first, second, ignoreCase, CultureInfo.InvariantCulture);
-        }
+            => Compare(first, second, ignoreCase, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Compare first and second, converting second to the
@@ -866,9 +842,7 @@ namespace System.Management.Automation
         /// zero if it is greater or zero if they are the same.</param>
         /// <returns>True if the comparison was successful, false otherwise.</returns>
         public static bool TryCompare(object first, object second, out int result)
-        {
-            return TryCompare(first, second, ignoreCase: false, CultureInfo.InvariantCulture, out result);
-        }
+            => TryCompare(first, second, ignoreCase: false, CultureInfo.InvariantCulture, out result);
 
         /// <summary>
         /// Tries to compare first and second, converting second to the type of the first, if necessary.
@@ -880,9 +854,7 @@ namespace System.Management.Automation
         /// <param name="result">Less than zero if first is smaller than second, more than zero if it is greater or zero if they are the same.</param>
         /// <returns>True if the comparison was successful, false otherwise.</returns>
         public static bool TryCompare(object first, object second, bool ignoreCase, out int result)
-        {
-            return TryCompare(first, second, ignoreCase, CultureInfo.InvariantCulture, out result);
-        }
+            => TryCompare(first, second, ignoreCase, CultureInfo.InvariantCulture, out result);
 
         /// <summary>
         /// Tries to compare first and second, converting second to the type of the first, if necessary.
@@ -1023,9 +995,7 @@ namespace System.Management.Automation
         }
 
         internal static bool IsTrue(string s)
-        {
-            return (s.Length != 0);
-        }
+            => s.Length != 0;
 
         internal static bool IsTrue(IList objectArray)
         {
@@ -1065,22 +1035,13 @@ namespace System.Management.Automation
         /// <param name="obj">The object to test.</param>
         /// <returns>True if the object is null.</returns>
         internal static bool IsNull(object obj)
-        {
-            return (obj == null || obj == AutomationNull.Value);
-        }
+            => (obj == null || obj == AutomationNull.Value);
 
         /// <summary>
         /// Auxiliary for the cases where we want a new PSObject or null.
         /// </summary>
         internal static PSObject AsPSObjectOrNull(object obj)
-        {
-            if (obj == null)
-            {
-                return null;
-            }
-
-            return PSObject.AsPSObject(obj);
-        }
+            => obj != null ? PSObject.AsPSObject(obj) : null;
 
         internal static int TypeTableIndex(Type type)
         {
@@ -1180,9 +1141,7 @@ namespace System.Management.Automation
         /// <param name="type"></param>
         /// <returns></returns>
         internal static TypeCode GetTypeCode(Type type)
-        {
-            return type.GetTypeCode();
-        }
+            => type.GetTypeCode();
 
         /// <summary>
         /// Emulates the "As" C# language primitive, but will unwrap
@@ -1267,9 +1226,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is a signed integer, false otherwise.</returns>
         internal static bool IsSignedInteger(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.SignedInteger) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.SignedInteger) != 0;
 
         /// <summary>
         /// Verifies if type is an unsigned integer.
@@ -1277,9 +1234,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is an unsigned integer, false otherwise.</returns>
         internal static bool IsUnsignedInteger(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.UnsignedInteger) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.UnsignedInteger) != 0;
 
         /// <summary>
         /// Verifies if type is integer.
@@ -1287,9 +1242,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is integer, false otherwise.</returns>
         internal static bool IsInteger(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Integer) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Integer) != 0;
 
         /// <summary>
         /// Verifies if type is a floating point number.
@@ -1297,9 +1250,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is floating point, false otherwise.</returns>
         internal static bool IsFloating(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Floating) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Floating) != 0;
 
         /// <summary>
         /// Verifies if type is an integer or floating point number.
@@ -1307,9 +1258,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is integer or floating point, false otherwise.</returns>
         internal static bool IsNumeric(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Numeric) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Numeric) != 0;
 
         /// <summary>
         /// Verifies if type is a CIM intrinsic type.
@@ -1317,9 +1266,7 @@ namespace System.Management.Automation
         /// <param name="typeCode">Type code to check.</param>
         /// <returns>True if type is CIM intrinsic type, false otherwise.</returns>
         internal static bool IsCimIntrinsicScalarType(TypeCode typeCode)
-        {
-            return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.CimIntrinsicType) != 0;
-        }
+            => (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.CimIntrinsicType) != 0;
 
         internal static bool IsCimIntrinsicScalarType(Type type)
         {
@@ -1349,13 +1296,7 @@ namespace System.Management.Automation
         /// <param name="type">Type to check.</param>
         /// <returns>True if type is one of boolean types, false otherwise.</returns>
         internal static bool IsBooleanType(Type type)
-        {
-            if (type == typeof(bool) ||
-                type == typeof(bool?))
-                return true;
-            else
-                return false;
-        }
+            => type == typeof(bool) || type == typeof(bool?);
 
         /// <summary>
         /// Verifies if type is one of switch parameter types.
@@ -1363,12 +1304,7 @@ namespace System.Management.Automation
         /// <param name="type">Type to check.</param>
         /// <returns>True if type is one of switch parameter types, false otherwise.</returns>
         internal static bool IsSwitchParameterType(Type type)
-        {
-            if (type == typeof(SwitchParameter) || type == typeof(SwitchParameter?))
-                return true;
-            else
-                return false;
-        }
+            => type == typeof(SwitchParameter) || type == typeof(SwitchParameter?);
 
         /// <summary>
         /// Verifies if type is one of boolean or switch parameter types.
@@ -1377,12 +1313,7 @@ namespace System.Management.Automation
         /// <returns>True if type if one of boolean or switch parameter types,
         /// false otherwise.</returns>
         internal static bool IsBoolOrSwitchParameterType(Type type)
-        {
-            if (IsBooleanType(type) || IsSwitchParameterType(type))
-                return true;
-            else
-                return false;
-        }
+            => IsBooleanType(type) || IsSwitchParameterType(type);
 
         /// <summary>
         /// Do the necessary conversions when using property or array assignment to a generic dictionary:
@@ -1685,9 +1616,12 @@ namespace System.Management.Automation
         /// <exception cref="ArgumentNullException">If resultType is null.</exception>
         /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
         public static object ConvertTo(object valueToConvert, Type resultType)
-        {
-            return ConvertTo(valueToConvert, resultType, true, CultureInfo.InvariantCulture, null);
-        }
+            => ConvertTo(
+                valueToConvert,
+                resultType,
+                recursion: true,
+                CultureInfo.InvariantCulture,
+                backupTypeTable: null);
 
         /// <summary>
         /// Converts valueToConvert to resultType possibly considering formatProvider.
@@ -1741,9 +1675,7 @@ namespace System.Management.Automation
         /// <exception cref="ArgumentNullException">If resultType is null.</exception>
         /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
         public static object ConvertTo(object valueToConvert, Type resultType, IFormatProvider formatProvider)
-        {
-            return ConvertTo(valueToConvert, resultType, true, formatProvider, null);
-        }
+            => ConvertTo(valueToConvert, resultType, recursion: true, formatProvider, backupTypeTable: null);
 
         /// <summary>
         /// Converts PSObject to resultType.
@@ -1836,9 +1768,7 @@ namespace System.Management.Automation
         /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
         /// <returns>False for conversion failure, true for success.</returns>
         public static bool TryConvertTo(object valueToConvert, Type resultType, out object result)
-        {
-            return TryConvertTo(valueToConvert, resultType, CultureInfo.InvariantCulture, out result);
-        }
+            => TryConvertTo(valueToConvert, resultType, CultureInfo.InvariantCulture, out result);
 
         /// <summary>
         /// Sets result to valueToConvert converted to resultType considering formatProvider
@@ -1895,6 +1825,17 @@ namespace System.Management.Automation
             {
                 return EnumSingleTypeConverter.BaseConvertFrom(sourceValue, destinationType, formatProvider, ignoreCase, true);
             }
+            public override object ConvertFrom(
+                object sourceValue,
+                Type destinationType,
+                IFormatProvider formatProvider,
+                bool ignoreCase)
+                    => BaseConvertFrom(
+                        sourceValue,
+                        destinationType,
+                        formatProvider,
+                        ignoreCase,
+                        multipleValues: true);
         }
 
         internal class EnumSingleTypeConverter : PSTypeConverter
@@ -1978,9 +1919,7 @@ namespace System.Management.Automation
             }
 
             public override bool CanConvertFrom(object sourceValue, Type destinationType)
-            {
-                return sourceValue is string && destinationType.IsEnum;
-            }
+                => sourceValue is string && destinationType.IsEnum;
 
             /// <summary>
             /// Checks if the enumValue is defined or not in enumType.
@@ -2057,9 +1996,7 @@ namespace System.Management.Automation
             /// <param name="enumValue">Supposed to be an integer.</param>
             /// <param name="errorId">The error id to be used when throwing an exception.</param>
             internal static void ThrowForUndefinedEnum(string errorId, object enumValue, Type enumType)
-            {
-                ThrowForUndefinedEnum(errorId, enumValue, enumValue, enumType);
-            }
+                => ThrowForUndefinedEnum(errorId, enumValue, enumValue, enumType);
 
             /// <summary>
             /// Throws if the enumType enumeration has no negative values, but the enumValue is not
@@ -2087,15 +2024,16 @@ namespace System.Management.Automation
             }
 
             internal static string EnumValues(Type enumType)
-            {
-                EnumHashEntry enumHashEntry = EnumSingleTypeConverter.GetEnumHashEntry(enumType);
-                return string.Join(CultureInfo.CurrentUICulture.TextInfo.ListSeparator, enumHashEntry.names);
-            }
+                => string.Join(
+                    CultureInfo.CurrentUICulture.TextInfo.ListSeparator,
+                    GetEnumHashEntry(enumType).names);
 
-            public override object ConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-            {
-                return EnumSingleTypeConverter.BaseConvertFrom(sourceValue, destinationType, formatProvider, ignoreCase, false);
-            }
+            public override object ConvertFrom(
+                object sourceValue,
+                Type destinationType,
+                IFormatProvider formatProvider,
+                bool ignoreCase)
+                    => BaseConvertFrom(sourceValue, destinationType, formatProvider, ignoreCase, multipleValues: false);
 
             protected static object BaseConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase, bool multipleValues)
             {
@@ -2236,15 +2174,14 @@ namespace System.Management.Automation
                 return Enum.ToObject(destinationType, returnUInt64);
             }
 
-            public override bool CanConvertTo(object sourceValue, Type destinationType)
-            {
-                return false;
-            }
+            public override bool CanConvertTo(object sourceValue, Type destinationType) => false;
 
-            public override object ConvertTo(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-            {
-                throw PSTraceSource.NewNotSupportedException();
-            }
+            public override object ConvertTo(
+                object sourceValue,
+                Type destinationType,
+                IFormatProvider formatProvider,
+                bool ignoreCase)
+                    => throw PSTraceSource.NewNotSupportedException();
         }
 
         /// <summary>
@@ -2567,10 +2504,7 @@ namespace System.Management.Automation
         }
 
         private static CultureInfo GetCultureFromFormatProvider(IFormatProvider formatProvider)
-        {
-            CultureInfo returnValue = formatProvider as CultureInfo ?? CultureInfo.InvariantCulture;
-            return returnValue;
-        }
+            => formatProvider as CultureInfo ?? CultureInfo.InvariantCulture;
 
         /// backupTypeTable:
         /// Used by Remoting Rehydration Logic. While Deserializing a remote object,
@@ -3115,115 +3049,107 @@ namespace System.Management.Automation
             return LanguagePrimitives.IsTrue((string)valueToConvert);
         }
 
-        private static bool ConvertInt16ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((Int16)valueToConvert) != default(Int16);
+            return IsTrue((string)valueToConvert);
         }
 
-        private static bool ConvertInt32ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((Int32)valueToConvert) != default(Int32);
-        }
+        private static bool ConvertInt16ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((short)valueToConvert) != default(short);
 
-        private static bool ConvertInt64ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((Int64)valueToConvert) != default(Int64);
-        }
+        private static bool ConvertInt32ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((int)valueToConvert) != default(int);
 
-        private static bool ConvertUInt16ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((UInt16)valueToConvert) != default(UInt16);
-        }
+        private static bool ConvertInt64ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((long)valueToConvert) != default(long);
 
-        private static bool ConvertUInt32ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((UInt32)valueToConvert) != default(UInt32);
-        }
+        private static bool ConvertUInt16ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((ushort)valueToConvert) != default(ushort);
 
-        private static bool ConvertUInt64ToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((UInt64)valueToConvert) != default(UInt64);
-        }
+        private static bool ConvertUInt32ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((uint)valueToConvert) != default(uint);
 
-        private static bool ConvertSByteToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((sbyte)valueToConvert) != default(sbyte);
-        }
+        private static bool ConvertUInt64ToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((ulong)valueToConvert) != default(ulong);
 
-        private static bool ConvertByteToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((byte)valueToConvert) != default(byte);
-        }
+        private static bool ConvertSByteToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((sbyte)valueToConvert) != default(sbyte);
 
-        private static bool ConvertSingleToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((Single)valueToConvert) != default(Single);
-        }
+        private static bool ConvertByteToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((byte)valueToConvert) != default(byte);
 
-        private static bool ConvertDoubleToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((double)valueToConvert) != default(double);
-        }
+        private static bool ConvertSingleToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((float)valueToConvert) != default(float);
 
-        private static bool ConvertDecimalToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
-        {
-            return ((Decimal)valueToConvert) != default(Decimal);
-        }
+        private static bool ConvertDoubleToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((double)valueToConvert) != default(double);
+
+        private static bool ConvertDecimalToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => ((decimal)valueToConvert) != default(decimal);
 
         private static PSConverter<bool> CreateNumericToBoolConverter(Type fromType)
         {
@@ -3402,16 +3328,20 @@ namespace System.Management.Automation
                 valueToConvert.ToString(), resultType.ToString(), exception.Message);
         }
 
-        private static object ConvertToNullable(object valueToConvert,
-                                                Type resultType,
-                                                bool recursion,
-                                                PSObject originalValueToConvert,
-                                                IFormatProvider formatProvider,
-                                                TypeTable backupTable)
-        {
-            // The CLR doesn't support boxed Nullable<T>.  Instead, languages convert to T and box.
-            return ConvertTo(valueToConvert, Nullable.GetUnderlyingType(resultType), recursion, formatProvider, backupTable);
-        }
+        private static object ConvertToNullable(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                // The CLR doesn't support boxed Nullable<T>.  Instead, languages convert to T and box.
+                => ConvertTo(
+                    valueToConvert,
+                    Nullable.GetUnderlyingType(resultType),
+                    recursion,
+                    formatProvider,
+                    backupTable);
 
         private static object ConvertRelatedArrays(object valueToConvert,
                                                    Type resultType,
@@ -3915,24 +3845,33 @@ namespace System.Management.Automation
             {
                 var newExpr = (constructor != null) ? Expression.New(constructor) : Expression.New(type);
                 _constructor = Expression.Lambda<Func<object>>(newExpr.Cast(typeof(object))).Compile();
+
             }
 
-            internal object Convert(object valueToConvert,
-                                    Type resultType,
-                                    bool recursion,
-                                    PSObject originalValueToConvert,
-                                    IFormatProvider formatProvider,
-                                    TypeTable backupTable)
-            {
-                return Convert(valueToConvert, resultType, recursion, originalValueToConvert, formatProvider, backupTable, false);
-            }
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
+                    => Convert(
+                        valueToConvert,
+                        resultType,
+                        recursion,
+                        originalValueToConvert,
+                        formatProvider,
+                        backupTable,
+                        ignoreUnknownMembers: false);
 
-            internal object Convert(object valueToConvert,
-                        Type resultType,
-                        bool recursion,
-                        PSObject originalValueToConvert,
-                        IFormatProvider formatProvider,
-                        TypeTable backupTable, bool ignoreUnknownMembers)
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable,
+                bool ignoreUnknownMembers)
             {
                 try
                 {
@@ -4168,15 +4107,14 @@ namespace System.Management.Automation
             return string.Empty;
         }
 
-        private static PSReference ConvertNullToPSReference(object valueToConvert,
-                                                            Type resultType,
-                                                            bool recursion,
-                                                            PSObject originalValueToConvert,
-                                                            IFormatProvider formatProvider,
-                                                            TypeTable backupTable)
-        {
-            return new PSReference<Null>(null);
-        }
+        private static PSReference ConvertNullToPSReference(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => new PSReference<Null>(null);
 
         private static object ConvertNullToRef(object valueToConvert,
                                                Type resultType,
@@ -4202,15 +4140,14 @@ namespace System.Management.Automation
             return false;
         }
 
-        private static object ConvertNullToNullable(object valueToConvert,
-                                                    Type resultType,
-                                                    bool recursion,
-                                                    PSObject originalValueToConvert,
-                                                    IFormatProvider formatProvider,
-                                                    TypeTable backupTable)
-        {
-            return null;
-        }
+        private static object ConvertNullToNullable(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
+                => null;
 
         private static SwitchParameter ConvertNullToSwitch(object valueToConvert,
                                                            Type resultType,
@@ -4326,17 +4263,24 @@ namespace System.Management.Automation
                 Rank = rank;
             }
 
-            public object Converter
-            {
-                get { return _converter; }
-            }
+            public object Converter { get => _converter; }
 
             public ConversionRank Rank { get; }
 
-            public object Invoke(object valueToConvert, Type resultType, bool recurse, PSObject originalValueToConvert, IFormatProvider formatProvider, TypeTable backupTable)
-            {
-                return _converter.Invoke(valueToConvert, resultType, recurse, originalValueToConvert, formatProvider, backupTable);
-            }
+            public object Invoke(
+                object valueToConvert,
+                Type resultType,
+                bool recurse,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
+                    => _converter.Invoke(
+                        valueToConvert,
+                        resultType,
+                        recurse,
+                        originalValueToConvert,
+                        formatProvider,
+                        backupTable);
         }
 
         private static Dictionary<ConversionTypePair, IConversionData> s_converterCache = new Dictionary<ConversionTypePair, IConversionData>(256);
@@ -4374,9 +4318,7 @@ namespace System.Management.Automation
         }
 
         internal static ConversionRank GetConversionRank(Type fromType, Type toType)
-        {
-            return FigureConversion(fromType, toType).Rank;
-        }
+            => FigureConversion(fromType, toType).Rank;
 
         private static Type[] s_numericTypes = new Type[] {
             typeof(Int16), typeof(Int32), typeof(Int64),
@@ -4588,12 +4530,34 @@ namespace System.Management.Automation
             return null;
         }
 
-        internal static PSObject SetObjectProperties(object o, IDictionary properties, Type resultType, MemberNotFoundError memberNotFoundErrorAction, MemberSetValueError memberSetValueErrorAction, bool enableMethodCall)
-        {
-            return SetObjectProperties(o, properties, resultType, memberNotFoundErrorAction, memberSetValueErrorAction, enableMethodCall, CultureInfo.InvariantCulture, false, false);
-        }
+        internal static PSObject SetObjectProperties(
+            object obj,
+            IDictionary properties,
+            Type resultType,
+            MemberNotFoundError memberNotFoundErrorAction,
+            MemberSetValueError memberSetValueErrorAction,
+            bool enableMethodCall)
+                => SetObjectProperties(
+                    obj,
+                    properties,
+                    resultType,
+                    memberNotFoundErrorAction,
+                    memberSetValueErrorAction,
+                    enableMethodCall,
+                    CultureInfo.InvariantCulture,
+                    recursion: false,
+                    ignoreUnknownMembers: false);
 
-        internal static PSObject SetObjectProperties(object o, IDictionary properties, Type resultType, MemberNotFoundError memberNotFoundErrorAction, MemberSetValueError memberSetValueErrorAction, bool enableMethodCall, IFormatProvider formatProvider, bool recursion = false, bool ignoreUnknownMembers = false)
+        internal static PSObject SetObjectProperties(
+            object obj,
+            IDictionary properties,
+            Type resultType,
+            MemberNotFoundError memberNotFoundErrorAction,
+            MemberSetValueError memberSetValueErrorAction,
+            bool enableMethodCall,
+            IFormatProvider formatProvider,
+            bool recursion = false,
+            bool ignoreUnknownMembers = false)
         {
             PSObject pso = PSObject.AsPSObject(o);
             if (properties != null)
@@ -5413,21 +5377,21 @@ namespace System.Management.Automation
         }
 
         private static bool IsIntegralType(Type type)
-        {
-            return
-                type == typeof(sbyte) ||
-                type == typeof(byte) ||
-                type == typeof(short) ||
-                type == typeof(ushort) ||
-                type == typeof(int) ||
-                type == typeof(uint) ||
-                type == typeof(long) ||
-                type == typeof(ulong);
-        }
+            => type == typeof(sbyte)
+                || type == typeof(byte)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint)
+                || type == typeof(long)
+                || type == typeof(ulong);
 
-        internal static PSConverter<object> FigurePropertyConversion(Type fromType, Type toType, ref ConversionRank rank)
+        internal static PSConverter<object> FigurePropertyConversion(
+            Type fromType,
+            Type toType,
+            ref ConversionRank rank)
         {
-            if ((!typeof(PSObject).IsAssignableFrom(fromType)) || (toType.IsAbstract))
+            if (!typeof(PSObject).IsAssignableFrom(fromType) || toType.IsAbstract)
             {
                 return null;
             }
