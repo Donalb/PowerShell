@@ -310,7 +310,11 @@ namespace System.Management.Automation
         {
             string availableProperties = GetAvailableProperties(pso);
 
-            string message = StringUtil.Format(ExtendedTypeSystem.PropertyNotFound, property.Key.ToString(), resultType.FullName, availableProperties);
+            string message = StringUtil.Format(
+                ExtendedTypeSystem.PropertyNotFound,
+                property.Key.ToString(),
+                resultType.FullName,
+                availableProperties);
 
             typeConversion.WriteLine("Issuing an error message about not being able to create an object from hashtable.");
             throw new InvalidOperationException(message);
@@ -332,12 +336,13 @@ namespace System.Management.Automation
         {
             lock (s_converterCache)
             {
-                var toRemove = s_converterCache.Keys.Where(
-                    conv => string.Equals(conv.to.FullName, typeName, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(conv.from.FullName, typeName, StringComparison.OrdinalIgnoreCase)).ToArray();
-                foreach (var k in toRemove)
+                ConversionTypePair[] toRemove = s_converterCache.Keys.Where(
+                    pair => string.Equals(pair.to.FullName, typeName, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(pair.from.FullName, typeName, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+                foreach (ConversionTypePair pair in toRemove)
                 {
-                    s_converterCache.Remove(k);
+                    s_converterCache.Remove(pair);
                 }
 
                 // Note we do not clear possibleTypeConverter even when removing.
@@ -370,8 +375,12 @@ namespace System.Management.Automation
 
             private void CreateGetEnumerator()
             {
-                _getEnumerator = new DynamicMethod("GetEnumerator", typeof(object),
-                    new Type[] { typeof(object) }, typeof(LanguagePrimitives).Module, true);
+                _getEnumerator = new DynamicMethod(
+                    name: "GetEnumerator",
+                    returnType: typeof(object),
+                    parameterTypes: new Type[] { typeof(object) },
+                    typeof(LanguagePrimitives).Module,
+                    skipVisibility: true);
 
                 ILGenerator emitter = _getEnumerator.GetILGenerator();
 
@@ -551,12 +560,14 @@ namespace System.Management.Automation
             PSDataCollection<PSObject> result = new PSDataCollection<PSObject>();
             if (inputValue != null)
             {
-                IEnumerator e = GetEnumerator(inputValue);
-                if (e != null)
+                IEnumerator enumerator = GetEnumerator(inputValue);
+                if (enumerator != null)
                 {
-                    while (e.MoveNext())
+                    while (enumerator.MoveNext())
                     {
-                        result.Add(e.Current == null ? null : PSObject.AsPSObject(e.Current));
+                        result.Add(enumerator.Current == null
+                            ? null
+                            : PSObject.AsPSObject(enumerator.Current));
                     }
                 }
                 else
@@ -637,9 +648,11 @@ namespace System.Management.Automation
             string secondString;
             if (firstString != null)
             {
-                secondString = second as string ?? (string)LanguagePrimitives.ConvertTo(second, typeof(string), culture);
-                return (culture.CompareInfo.Compare(firstString, secondString,
-                                                    ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None) == 0);
+                string secondString = second as string ?? (string)ConvertTo(second, typeof(string), culture);
+                return (culture.CompareInfo.Compare(
+                    firstString,
+                    secondString,
+                    ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None) == 0);
             }
 
             if (first.Equals(second)) return true;
@@ -788,13 +801,19 @@ namespace System.Management.Automation
                     }
                     catch (PSInvalidCastException e)
                     {
-                        throw PSTraceSource.NewArgumentException("second", ExtendedTypeSystem.ComparisonFailure,
-                                                                 first.ToString(), second.ToString(), e.Message);
+                        throw PSTraceSource.NewArgumentException(
+                            nameof(second),
+                            ExtendedTypeSystem.ComparisonFailure,
+                            first.ToString(),
+                            second.ToString(),
+                            e.Message);
                     }
                 }
 
-                return culture.CompareInfo.Compare(firstString, secondString,
-                                                   ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+                return culture.CompareInfo.Compare(
+                    firstString,
+                    secondString,
+                    ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
             }
 
             Type firstType = first.GetType();
@@ -813,8 +832,12 @@ namespace System.Management.Automation
             }
             catch (PSInvalidCastException e)
             {
-                throw PSTraceSource.NewArgumentException("second", ExtendedTypeSystem.ComparisonFailure,
-                                                         first.ToString(), second.ToString(), e.Message);
+                throw PSTraceSource.NewArgumentException(
+                    nameof(second),
+                    ExtendedTypeSystem.ComparisonFailure,
+                    first.ToString(),
+                    second.ToString(),
+                    e.Message);
             }
 
             if (first is IComparable firstComparable)
@@ -983,9 +1006,20 @@ namespace System.Management.Automation
 
             if (LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(objType)))
             {
-                IConversionData data = GetConversionData(objType, typeof(bool)) ??
-                                       CacheConversion(objType, typeof(bool), CreateNumericToBoolConverter(objType), ConversionRank.Language);
-                return (bool)data.Invoke(obj, typeof(bool), false, null, null, null);
+                IConversionData data = GetConversionData(objType, typeof(bool))
+                    ?? CacheConversion(
+                        objType,
+                        typeof(bool),
+                        CreateNumericToBoolConverter(objType),
+                        ConversionRank.Language);
+
+                return (bool)data.Invoke(
+                    valueToConvert: obj,
+                    resultType: typeof(bool),
+                    recurse: false,
+                    originalValueToConvert: null,
+                    formatProvider: null,
+                    backupTable: null);
             }
 
             if (objType == typeof(SwitchParameter))
@@ -1355,8 +1389,12 @@ namespace System.Management.Automation
 
         #region type converter
 
-        internal static PSTraceSource typeConversion = PSTraceSource.GetTracer("TypeConversion", "Traces the type conversion algorithm", false);
-        internal static ConversionData<object> NoConversion = new ConversionData<object>(ConvertNoConversion, ConversionRank.None);
+        internal static PSTraceSource typeConversion = PSTraceSource.GetTracer(
+            "TypeConversion",
+            "Traces the type conversion algorithm",
+            traceHeaders: false);
+        internal static ConversionData<object> NoConversion
+            = new ConversionData<object>(ConvertNoConversion, ConversionRank.None);
 
         private static TypeConverter GetIntegerSystemConverter(Type type)
         {
@@ -1697,14 +1735,22 @@ namespace System.Management.Automation
             IFormatProvider formatProvider,
             bool ignoreUnknownMembers)
         {
-            if (valueToConvert != null)
+            if (valueToConvert == null)
             {
-                ConstructorInfo toConstructor = resultType.GetConstructor(Type.EmptyTypes);
-                ConvertViaNoArgumentConstructor noArgumentConstructorConverter = new ConvertViaNoArgumentConstructor(toConstructor, resultType);
-                return noArgumentConstructorConverter.Convert(PSObject.Base(valueToConvert), resultType, recursion, (PSObject)valueToConvert, formatProvider, null, ignoreUnknownMembers);
+                return null;
             }
 
-            return null;
+            ConstructorInfo toConstructor = resultType.GetConstructor(Type.EmptyTypes);
+            var noArgumentConstructorConverter = new ConvertViaNoArgumentConstructor(toConstructor, resultType);
+
+            return noArgumentConstructorConverter.Convert(
+                PSObject.Base(valueToConvert),
+                resultType,
+                recursion,
+                (PSObject)valueToConvert,
+                formatProvider,
+                backupTable: null,
+                ignoreUnknownMembers);
         }
 
         /// <summary>
@@ -1720,7 +1766,12 @@ namespace System.Management.Automation
                 return value;
             }
 
-            return (T)ConvertTo(valueToConvert, typeof(T), true, CultureInfo.InvariantCulture, null);
+            return (T)ConvertTo(
+                valueToConvert,
+                typeof(T),
+                recursion: true,
+                CultureInfo.InvariantCulture,
+                backupTypeTable: null);
         }
 
         /// <summary>
@@ -1740,7 +1791,7 @@ namespace System.Management.Automation
                 return true;
             }
 
-            return TryConvertTo(valueToConvert, CultureInfo.InvariantCulture, out result);
+            return TryConvertTo<T>(valueToConvert, CultureInfo.InvariantCulture, out result);
         }
         /// <summary>
         /// Sets result to valueToConvert converted to resultType considering formatProvider
@@ -1926,7 +1977,12 @@ namespace System.Management.Automation
                     // MemberInfo.GetCustomAttributes returns IEnumerable<Attribute> in CoreCLR.
                     bool hasFlagsAttribute = enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
 
-                    returnValue = new EnumHashEntry(Enum.GetNames(enumType), values, allValues, hasNegativeValue, hasFlagsAttribute);
+                    returnValue = new EnumHashEntry(
+                        Enum.GetNames(enumType),
+                        values,
+                        allValues,
+                        hasNegativeValue,
+                        hasFlagsAttribute);
                     s_enumTable.Add(enumType, returnValue);
                     return returnValue;
                 }
@@ -2035,9 +2091,14 @@ namespace System.Management.Automation
                 if (!IsDefinedEnum(enumValue, enumType))
                 {
                     typeConversion.WriteLine("Value {0} is not defined in the Enum {1}.", valueToUseToThrow, enumType);
-                    throw new PSInvalidCastException(errorId, null,
+
+                    throw new PSInvalidCastException(
+                        errorId,
+                        innerException: null,
                         ExtendedTypeSystem.InvalidCastExceptionEnumerationNoValue,
-                        valueToUseToThrow, enumType, EnumSingleTypeConverter.EnumValues(enumType));
+                        valueToUseToThrow,
+                        enumType,
+                        EnumValues(enumType));
                 }
             }
 
@@ -2064,25 +2125,37 @@ namespace System.Management.Automation
                 string sourceValueString = sourceValue as string;
                 if (sourceValueString == null)
                 {
-                    throw new PSInvalidCastException("InvalidCastEnumFromTypeNotAString", null,
+                    throw new PSInvalidCastException(
+                        "InvalidCastEnumFromTypeNotAString",
+                        innerException: null,
                         ExtendedTypeSystem.InvalidCastException,
-                        sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
+                        sourceValue,
+                        ObjectToTypeNameString(sourceValue),
+                        destinationType);
                 }
 
                 Diagnostics.Assert(destinationType.IsEnum, "EnumSingleTypeConverter is only applied to enumerations");
                 if (sourceValueString.Length == 0)
                 {
-                    throw new PSInvalidCastException("InvalidCastEnumFromEmptyString", null,
+                    throw new PSInvalidCastException(
+                        "InvalidCastEnumFromEmptyString",
+                        innerException: null,
                         ExtendedTypeSystem.InvalidCastException,
-                        sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
+                        sourceValue,
+                        ObjectToTypeNameString(sourceValue),
+                        destinationType);
                 }
 
                 sourceValueString = sourceValueString.Trim();
                 if (sourceValueString.Length == 0)
                 {
-                    throw new PSInvalidCastException("InvalidEnumCastFromEmptyStringAfterTrim", null,
+                    throw new PSInvalidCastException(
+                        "InvalidEnumCastFromEmptyStringAfterTrim",
+                        innerException: null,
                         ExtendedTypeSystem.InvalidCastException,
-                        sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
+                        sourceValue,
+                        ObjectToTypeNameString(sourceValue),
+                        destinationType);
                 }
 
                 if (char.IsDigit(sourceValueString[0]) || sourceValueString[0] == '+' || sourceValueString[0] == '-')
@@ -2090,8 +2163,14 @@ namespace System.Management.Automation
                     Type underlyingType = Enum.GetUnderlyingType(destinationType);
                     try
                     {
-                        object result = Enum.ToObject(destinationType, Convert.ChangeType(sourceValueString, underlyingType, formatProvider));
-                        ThrowForUndefinedEnum("UndefinedInEnumSingleTypeConverter", result, sourceValueString, destinationType);
+                        object result = Enum.ToObject(
+                            destinationType,
+                            Convert.ChangeType(sourceValueString, underlyingType, formatProvider));
+                        ThrowForUndefinedEnum(
+                            "UndefinedInEnumSingleTypeConverter",
+                            result,
+                            sourceValueString,
+                            destinationType);
                         return result;
                     }
                     catch (Exception) // Enum.ToObject and Convert.ChangeType might throw unadvertised exceptions
@@ -2106,16 +2185,21 @@ namespace System.Management.Automation
                 {
                     if (sourceValueString.Contains(","))
                     {
-                        throw new PSInvalidCastException("InvalidCastEnumCommaAndNoFlags", null,
+                        throw new PSInvalidCastException(
+                            "InvalidCastEnumCommaAndNoFlags",
+                            innerException: null,
                             ExtendedTypeSystem.InvalidCastExceptionEnumerationNoFlagAndComma,
-                            sourceValue, destinationType);
+                            sourceValue,
+                            destinationType);
                     }
 
                     sourceValueEntries = new string[] { sourceValueString };
                     fromValuePatterns = new WildcardPattern[1];
                     if (WildcardPattern.ContainsWildcardCharacters(sourceValueString))
                     {
-                        fromValuePatterns[0] = WildcardPattern.Get(sourceValueString, ignoreCase ? WildcardOptions.IgnoreCase : WildcardOptions.None);
+                        fromValuePatterns[0] = WildcardPattern.Get(
+                            sourceValueString,
+                            ignoreCase ? WildcardOptions.IgnoreCase : WildcardOptions.None);
                     }
                     else
                     {
@@ -2131,7 +2215,8 @@ namespace System.Management.Automation
                         string sourceValueEntry = sourceValueEntries[i];
                         if (WildcardPattern.ContainsWildcardCharacters(sourceValueEntry))
                         {
-                            fromValuePatterns[i] = WildcardPattern.Get(sourceValueEntry,
+                            fromValuePatterns[i] = WildcardPattern.Get(
+                                sourceValueEntry,
                                 ignoreCase ? WildcardOptions.IgnoreCase : WildcardOptions.None);
                         }
                         else
@@ -2176,10 +2261,18 @@ namespace System.Management.Automation
                         if (!multipleValues && foundOne)
                         {
                             object firstValue = Enum.ToObject(destinationType, returnUInt64);
-                            object secondValue = Enum.ToObject(destinationType, Convert.ToUInt64(values.GetValue(i), CultureInfo.CurrentCulture));
-                            throw new PSInvalidCastException("InvalidCastEnumTwoStringsFoundAndNoFlags", null,
+                            object secondValue = Enum.ToObject(
+                                destinationType,
+                                Convert.ToUInt64(values.GetValue(i), CultureInfo.CurrentCulture));
+
+                            throw new PSInvalidCastException(
+                                "InvalidCastEnumTwoStringsFoundAndNoFlags",
+                                innerException: null,
                                 ExtendedTypeSystem.InvalidCastExceptionEnumerationMoreThanOneValue,
-                                sourceValue, destinationType, firstValue, secondValue);
+                                sourceValue,
+                                destinationType,
+                                firstValue,
+                                secondValue);
                         }
 
                         foundOne = true;
@@ -2188,9 +2281,13 @@ namespace System.Management.Automation
 
                     if (!foundOne)
                     {
-                        throw new PSInvalidCastException("InvalidCastEnumStringNotFound", null,
+                        throw new PSInvalidCastException(
+                            "InvalidCastEnumStringNotFound",
+                            innerException: null,
                             ExtendedTypeSystem.InvalidCastExceptionEnumerationNoValue,
-                            sourceValueEntry, destinationType, EnumSingleTypeConverter.EnumValues(destinationType));
+                            sourceValueEntry,
+                            destinationType,
+                            EnumValues(destinationType));
                     }
                 }
 
@@ -2241,7 +2338,10 @@ namespace System.Management.Automation
                         continue;
                     }
 
-                    typeConversion.WriteLine("Found \"{0}\" cast operator in type {1}.", methodName, targetType.FullName);
+                    typeConversion.WriteLine(
+                        "Found \"{0}\" cast operator in type {1}.",
+                        methodName,
+                        targetType.FullName);
                     return method;
                 }
 
@@ -2255,10 +2355,15 @@ namespace System.Management.Automation
             using (typeConversion.TraceScope("Numeric Conversion through System.Double."))
             {
                 // Eventual exceptions here are caught by the caller
-                object intermediate = Convert.ChangeType(valueToConvert, typeof(double),
-                                                      System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
-                return Convert.ChangeType(intermediate, resultType,
-                                                      System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                object intermediate = Convert.ChangeType(
+                    valueToConvert,
+                    typeof(double),
+                    CultureInfo.InvariantCulture.NumberFormat);
+
+                return Convert.ChangeType(
+                    intermediate,
+                    resultType,
+                    CultureInfo.InvariantCulture.NumberFormat);
             }
         }
 
@@ -2276,14 +2381,25 @@ namespace System.Management.Automation
             string valueToConvertString;
             try
             {
-                valueToConvertString = PSObject.ToString(null, valueToConvert, "\n", null, null, true, true);
+                valueToConvertString = PSObject.ToString(
+                    context: null,
+                    valueToConvert,
+                    separator: "\n",
+                    format: null,
+                    formatProvider: null,
+                    recurse: true,
+                    unravelEnumeratorOnRecurse: true);
             }
             catch (ExtendedTypeSystemException e)
             {
                 typeConversion.WriteLine("Exception converting value to string: {0}", e.Message);
-                throw new PSInvalidCastException("InvalidCastGetStringToWMI", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastGetStringToWMI",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionNoStringForConversion,
-                    resultType.ToString(), e.Message);
+                    resultType.ToString(),
+                    e.Message);
             }
 
             try
@@ -2302,9 +2418,14 @@ namespace System.Management.Automation
             catch (Exception wmiObjectException)
             {
                 typeConversion.WriteLine("Exception creating WMI object: \"{0}\".", wmiObjectException.Message);
-                throw new PSInvalidCastException("InvalidCastToWMI", wmiObjectException,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastToWMI",
+                    wmiObjectException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), wmiObjectException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    wmiObjectException.Message);
             }
         }
 
@@ -2321,14 +2442,25 @@ namespace System.Management.Automation
             string valueToConvertString;
             try
             {
-                valueToConvertString = PSObject.ToString(null, valueToConvert, "\n", null, null, true, true);
+                valueToConvertString = PSObject.ToString(
+                    context: null,
+                    valueToConvert,
+                    separator: "\n",
+                    format: null,
+                    formatProvider: null,
+                    recurse: true,
+                    unravelEnumeratorOnRecurse: true);
             }
             catch (ExtendedTypeSystemException e)
             {
                 typeConversion.WriteLine("Exception converting value to string: {0}", e.Message);
-                throw new PSInvalidCastException("InvalidCastGetStringToWMISearcher", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastGetStringToWMISearcher",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionNoStringForConversion,
-                    resultType.ToString(), e.Message);
+                    resultType.ToString(),
+                    e.Message);
             }
 
             try
@@ -2339,9 +2471,14 @@ namespace System.Management.Automation
             catch (Exception objectSearcherException)
             {
                 typeConversion.WriteLine("Exception running WMI object query: \"{0}\".", objectSearcherException.Message);
-                throw new PSInvalidCastException("InvalidCastToWMISearcher", objectSearcherException,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastToWMISearcher",
+                    objectSearcherException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), objectSearcherException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    objectSearcherException.Message);
             }
         }
 
@@ -2358,14 +2495,25 @@ namespace System.Management.Automation
             string valueToConvertString;
             try
             {
-                valueToConvertString = PSObject.ToString(null, valueToConvert, "\n", null, null, true, true);
+                valueToConvertString = PSObject.ToString(
+                    context: null,
+                    valueToConvert,
+                    separator: "\n",
+                    format: null,
+                    formatProvider: null,
+                    recurse: true,
+                    unravelEnumeratorOnRecurse: true);
             }
             catch (ExtendedTypeSystemException e)
             {
                 typeConversion.WriteLine("Exception converting value to string: {0}", e.Message);
-                throw new PSInvalidCastException("InvalidCastGetStringToWMIClass", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastGetStringToWMIClass",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionNoStringForConversion,
-                    resultType.ToString(), e.Message);
+                    resultType.ToString(),
+                    e.Message);
             }
 
             try
@@ -2385,9 +2533,14 @@ namespace System.Management.Automation
             catch (Exception wmiClassException)
             {
                 typeConversion.WriteLine("Exception creating WMI class: \"{0}\".", wmiClassException.Message);
-                throw new PSInvalidCastException("InvalidCastToWMIClass", wmiClassException,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastToWMIClass",
+                    wmiClassException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), wmiClassException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    wmiClassException.Message);
             }
         }
 
@@ -2404,14 +2557,25 @@ namespace System.Management.Automation
             string valueToConvertString;
             try
             {
-                valueToConvertString = PSObject.ToString(null, valueToConvert, "\n", null, null, true, true);
+                valueToConvertString = PSObject.ToString(
+                    context: null,
+                    valueToConvert,
+                    separator: "\n",
+                    format: null,
+                    formatProvider: null,
+                    recurse: true,
+                    unravelEnumeratorOnRecurse: true);
             }
             catch (ExtendedTypeSystemException e)
             {
                 typeConversion.WriteLine("Exception converting value to string: {0}", e.Message);
-                throw new PSInvalidCastException("InvalidCastGetStringToADSIClass", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastGetStringToADSIClass",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionNoStringForConversion,
-                    resultType.ToString(), e.Message);
+                    resultType.ToString(),
+                    e.Message);
             }
 
             try
@@ -2422,9 +2586,14 @@ namespace System.Management.Automation
             catch (Exception adsiClassException)
             {
                 typeConversion.WriteLine("Exception creating ADSI class: \"{0}\".", adsiClassException.Message);
-                throw new PSInvalidCastException("InvalidCastToADSIClass", adsiClassException,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastToADSIClass",
+                    adsiClassException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), adsiClassException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    adsiClassException.Message);
             }
         }
 
@@ -2445,9 +2614,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception creating ADSI searcher: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastToADSISearcher", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastToADSISearcher",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 #endif
@@ -2475,21 +2649,41 @@ namespace System.Management.Automation
         {
             try
             {
-                var stringArrayValue = (string[])ConvertTo(valueToConvert, typeof(string[]), false, formatProvider, backupTable);
+                var stringArrayValue = (string[])ConvertTo(
+                    valueToConvert,
+                    typeof(string[]),
+                    recursion: false,
+                    formatProvider,
+                    backupTable);
                 stringCollection.AddRange(stringArrayValue);
             }
             catch (PSInvalidCastException)
             {
                 typeConversion.WriteLine("valueToConvert contains non-string type values");
-                var argEx = new ArgumentException(StringUtil.Format(ExtendedTypeSystem.CannotConvertValueToStringArray, valueToConvert.ToString()));
-                throw new PSInvalidCastException(StringUtil.Format("InvalidCastTo{0}Class", resultType.Name), argEx,
-                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException, valueToConvert.ToString(), resultType.ToString(), argEx.Message);
+
+                var innerException = new ArgumentException(StringUtil.Format(
+                    ExtendedTypeSystem.CannotConvertValueToStringArray,
+                    valueToConvert.ToString()));
+
+                throw new PSInvalidCastException(
+                    StringUtil.Format("InvalidCastTo{0}Class", resultType.Name),
+                    innerException,
+                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    innerException.Message);
             }
             catch (Exception ex)
             {
                 typeConversion.WriteLine("Exception creating StringCollection class: \"{0}\".", ex.Message);
-                throw new PSInvalidCastException(StringUtil.Format("InvalidCastTo{0}Class", resultType.Name), ex,
-                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException, valueToConvert.ToString(), resultType.ToString(), ex.Message);
+
+                throw new PSInvalidCastException(
+                    StringUtil.Format("InvalidCastTo{0}Class", resultType.Name),
+                    innerException: ex,
+                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    ex.Message);
             }
         }
 
@@ -2506,14 +2700,25 @@ namespace System.Management.Automation
                 string valueToConvertString;
                 try
                 {
-                    valueToConvertString = PSObject.ToString(null, valueToConvert, "\n", null, null, true, true);
+                    valueToConvertString = PSObject.ToString(
+                        context: null,
+                        valueToConvert,
+                        separator: "\n",
+                        format: null,
+                        formatProvider: null,
+                        recurse: true,
+                        unravelEnumeratorOnRecurse: true);
                 }
                 catch (ExtendedTypeSystemException e)
                 {
                     typeConversion.WriteLine("Exception converting value to string: {0}", e.Message);
-                    throw new PSInvalidCastException("InvalidCastGetStringToXmlDocument", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastGetStringToXmlDocument",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionNoStringForConversion,
-                        resultType.ToString(), e.Message);
+                        resultType.ToString(),
+                        e.Message);
                 }
 
                 try
@@ -2536,9 +2741,14 @@ namespace System.Management.Automation
                 catch (Exception loadXmlException)
                 {
                     typeConversion.WriteLine("Exception loading XML: \"{0}\".", loadXmlException.Message);
-                    throw new PSInvalidCastException("InvalidCastToXmlDocument", loadXmlException,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastToXmlDocument",
+                        loadXmlException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), loadXmlException.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        loadXmlException.Message);
                 }
             }
         }
@@ -2576,15 +2786,26 @@ namespace System.Management.Automation
                             typeConversion.WriteLine("TypeConverter can convert to resultType.");
                             try
                             {
-                                result = valueTypeConverter.ConvertTo(null, GetCultureFromFormatProvider(formatProvider), baseValueToConvert, resultType);
+                                result = valueTypeConverter.ConvertTo(
+                                    context: null,
+                                    GetCultureFromFormatProvider(formatProvider),
+                                    baseValueToConvert,
+                                    resultType);
                                 return true;
                             }
                             catch (Exception e)
                             {
-                                typeConversion.WriteLine("Exception converting with Original type's TypeConverter: \"{0}\".", e.Message);
-                                throw new PSInvalidCastException("InvalidCastTypeConvertersConvertTo", e,
+                                typeConversion.WriteLine(
+                                    "Exception converting with Original type's TypeConverter: \"{0}\".",
+                                    e.Message);
+
+                                throw new PSInvalidCastException(
+                                    "InvalidCastTypeConvertersConvertTo",
+                                    innerException: e,
                                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                                    valueToConvert.ToString(),
+                                    resultType.ToString(),
+                                    e.Message);
                             }
                         }
                         else
@@ -2603,15 +2824,26 @@ namespace System.Management.Automation
                             typeConversion.WriteLine("Original type's PSTypeConverter can convert to resultType.");
                             try
                             {
-                                result = valuePSTypeConverter.ConvertTo(psValueToConvert, resultType, formatProvider, true);
+                                result = valuePSTypeConverter.ConvertTo(
+                                    psValueToConvert,
+                                    resultType,
+                                    formatProvider,
+                                    ignoreCase: true);
                                 return true;
                             }
                             catch (Exception e)
                             {
-                                typeConversion.WriteLine("Exception converting with Original type's PSTypeConverter: \"{0}\".", e.Message);
-                                throw new PSInvalidCastException("InvalidCastPSTypeConvertersConvertTo", e,
+                                typeConversion.WriteLine(
+                                    "Exception converting with Original type's PSTypeConverter: \"{0}\".",
+                                    e.Message);
+
+                                throw new PSInvalidCastException(
+                                    "InvalidCastPSTypeConvertersConvertTo",
+                                    innerException: e,
                                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                                    valueToConvert.ToString(),
+                                    resultType.ToString(),
+                                    e.Message);
                             }
                         }
                         else
@@ -2630,21 +2862,32 @@ namespace System.Management.Automation
                     TypeConverter valueTypeConverter = valueConverter as TypeConverter;
                     if (valueTypeConverter != null)
                     {
-                        typeConversion.WriteLine("Destination type's converter is TypeConverter that can convert from originalType.");
+                        typeConversion.WriteLine(
+                            "Destination type's converter is TypeConverter that can convert from originalType.");
                         if (valueTypeConverter.CanConvertFrom(originalType))
                         {
                             typeConversion.WriteLine("Destination type's converter can convert from originalType.");
                             try
                             {
-                                result = valueTypeConverter.ConvertFrom(null, GetCultureFromFormatProvider(formatProvider), baseValueToConvert);
+                                result = valueTypeConverter.ConvertFrom(
+                                    context: null,
+                                    GetCultureFromFormatProvider(formatProvider),
+                                    baseValueToConvert);
                                 return true;
                             }
                             catch (Exception e)
                             {
-                                typeConversion.WriteLine("Exception converting with Destination type's TypeConverter: \"{0}\".", e.Message);
-                                throw new PSInvalidCastException("InvalidCastTypeConvertersConvertFrom", e,
+                                typeConversion.WriteLine(
+                                    "Exception converting with Destination type's TypeConverter: \"{0}\".",
+                                    e.Message);
+
+                                throw new PSInvalidCastException(
+                                    "InvalidCastTypeConvertersConvertFrom",
+                                    innerException: e,
                                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                                    valueToConvert.ToString(),
+                                    resultType.ToString(),
+                                    e.Message);
                             }
                         }
                         else
@@ -2663,15 +2906,26 @@ namespace System.Management.Automation
                             typeConversion.WriteLine("Destination type's converter can convert from originalType.");
                             try
                             {
-                                result = valuePSTypeConverter.ConvertFrom(psValueToConvert, resultType, formatProvider, true);
+                                result = valuePSTypeConverter.ConvertFrom(
+                                    psValueToConvert,
+                                    resultType,
+                                    formatProvider,
+                                    ignoreCase: true);
                                 return true;
                             }
                             catch (Exception e)
                             {
-                                typeConversion.WriteLine("Exception converting with Destination type's PSTypeConverter: \"{0}\".", e.Message);
-                                throw new PSInvalidCastException("InvalidCastPSTypeConvertersConvertFrom", e,
+                                typeConversion.WriteLine(
+                                    "Exception converting with Destination type's PSTypeConverter: \"{0}\".",
+                                    e.Message);
+
+                                throw new PSInvalidCastException(
+                                    "InvalidCastPSTypeConvertersConvertFrom",
+                                    innerException: e,
                                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                                    valueToConvert.ToString(),
+                                    resultType.ToString(),
+                                    e.Message);
                             }
                         }
                         else
@@ -2698,16 +2952,24 @@ namespace System.Management.Automation
             {
                 // Convert char through int to float/double.
                 object result = Convert.ChangeType(
-                    Convert.ChangeType(valueToConvert, typeof(int), formatProvider), resultType, formatProvider);
+                    Convert.ChangeType(valueToConvert, typeof(int), formatProvider),
+                    resultType,
+                    formatProvider);
+
                 typeConversion.WriteLine("Numeric conversion succeeded.");
                 return result;
             }
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception converting with IConvertible: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastIConvertible", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastIConvertible",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -2728,9 +2990,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception converting with IConvertible: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastIConvertible", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastIConvertible",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -2766,9 +3033,14 @@ namespace System.Management.Automation
             catch (Exception regexException)
             {
                 typeConversion.WriteLine("Exception in RegEx constructor: \"{0}\".", regexException.Message);
-                throw new PSInvalidCastException("InvalidCastFromStringToRegex", regexException,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToRegex",
+                    regexException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), regexException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    regexException.Message);
             }
         }
 
@@ -2789,7 +3061,9 @@ namespace System.Management.Automation
             catch (Microsoft.Management.Infrastructure.CimException cimException)
             {
                 typeConversion.WriteLine("Exception in CimSession.Create: \"{0}\".", cimException.Message);
-                throw new PSInvalidCastException("InvalidCastFromStringToCimSession", cimException,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToCimSession",
+                    cimException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
                     valueToConvert.ToString(), resultType.ToString(), cimException.Message);
             }
@@ -2813,9 +3087,13 @@ namespace System.Management.Automation
                     throw exception;
                 }
 
-                throw new PSInvalidCastException("InvalidCastFromStringToType", exception,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToType",
+                    exception,
                     ExtendedTypeSystem.InvalidCastException,
-                    valueToConvert.ToString(), ObjectToTypeNameString(valueToConvert), resultType.ToString());
+                    valueToConvert.ToString(),
+                    ObjectToTypeNameString(valueToConvert),
+                    resultType.ToString());
             }
 
             return namedType;
@@ -2846,9 +3124,13 @@ namespace System.Management.Automation
             catch (Exception uriException)
             {
                 typeConversion.WriteLine("Exception in Uri constructor: \"{0}\".", uriException.Message);
-                throw new PSInvalidCastException("InvalidCastFromStringToUri", uriException,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToUri",
+                    uriException,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), uriException.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    uriException.Message);
             }
         }
 
@@ -2931,13 +3213,19 @@ namespace System.Management.Automation
                     }
                     catch (Exception ex) // swallow non-severe exceptions
                     {
-                        typeConversion.WriteLine("Exception converting to integer through double: \"{0}\".", ex.Message);
+                        typeConversion.WriteLine(
+                            "Exception converting to integer through double: \"{0}\".",
+                            ex.Message);
                     }
                 }
 
-                throw new PSInvalidCastException("InvalidCastFromStringToInteger", e,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToInteger",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    strToConvert, resultType.ToString(), e.Message);
+                    strToConvert,
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -2974,7 +3262,9 @@ namespace System.Management.Automation
             }
             catch (Exception e)
             {
-                typeConversion.WriteLine("Exception converting to decimal: \"{0}\". Converting to decimal passing through double.", e.Message);
+                typeConversion.WriteLine(
+                    "Exception converting to decimal: \"{0}\". Converting to decimal passing through double.",
+                    e.Message);
                 if (e is FormatException)
                 {
                     try
@@ -2983,13 +3273,19 @@ namespace System.Management.Automation
                     }
                     catch (Exception ex)
                     {
-                        typeConversion.WriteLine("Exception converting to integer through double: \"{0}\".", ex.Message);
+                        typeConversion.WriteLine(
+                            "Exception converting to integer through double: \"{0}\".",
+                            ex.Message);
                     }
                 }
 
-                throw new PSInvalidCastException("InvalidCastFromStringToDecimal", e,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToDecimal",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    strToConvert, resultType.ToString(), e.Message);
+                    strToConvert,
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -3028,9 +3324,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception converting to double or single: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastFromStringToDoubleOrSingle", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastFromStringToDoubleOrSingle",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    strToConvert, resultType.ToString(), e.Message);
+                    strToConvert,
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -3103,9 +3404,6 @@ namespace System.Management.Automation
             TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting string to boolean.");
-            return LanguagePrimitives.IsTrue((string)valueToConvert);
-        }
-
             return IsTrue((string)valueToConvert);
         }
 
@@ -3293,14 +3591,21 @@ namespace System.Management.Automation
                     return sgl.ToString(SinglePrecision, numberFormat);
                 }
 
-                return (string)Convert.ChangeType(valueToConvert, resultType, CultureInfo.InvariantCulture.NumberFormat);
+                return (string)Convert.ChangeType(
+                    valueToConvert,
+                    resultType,
+                    CultureInfo.InvariantCulture.NumberFormat);
             }
             catch (Exception e)
             {
                 typeConversion.WriteLine("Converting numeric to string Exception: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastFromNumericToString", e,
+                throw new PSInvalidCastException(
+                    "InvalidCastFromNumericToString",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -3321,7 +3626,10 @@ namespace System.Management.Automation
             catch (ExtendedTypeSystemException e)
             {
                 typeConversion.WriteLine("Converting object to string Exception: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastFromAnyTypeToString", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastFromAnyTypeToString",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastCannotRetrieveString);
             }
         }
@@ -3385,12 +3693,18 @@ namespace System.Management.Automation
             {
                 exception = e;
             }
+            finally
+            {
+                typeConversion.WriteLine("Converting script block to delegate Exception: \"{0}\".", exception.Message);
 
-            typeConversion.WriteLine("Converting script block to delegate Exception: \"{0}\".", exception.Message);
-
-            throw new PSInvalidCastException("InvalidCastFromScriptBlockToDelegate", exception,
-                ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                valueToConvert.ToString(), resultType.ToString(), exception.Message);
+                throw new PSInvalidCastException(
+                    "InvalidCastFromScriptBlockToDelegate",
+                    exception,
+                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    exception.Message);
+            }
         }
 
         private static object ConvertToNullable(
@@ -3416,7 +3730,9 @@ namespace System.Management.Automation
             IFormatProvider formatProvider,
             TypeTable backupTable)
         {
-            typeConversion.WriteLine("The element type of result is assignable from the element type of the value to convert");
+            typeConversion.WriteLine(
+                "The element type of result is assignable from the element type of the value to convert");
+
             var originalAsArray = (Array)valueToConvert;
             var newValue = Array.CreateInstance(resultType.GetElementType(), originalAsArray.Length);
             originalAsArray.CopyTo(newValue, 0);
@@ -3437,7 +3753,13 @@ namespace System.Management.Automation
 
             for (int i = 0; i < valueAsArray.Length; i++)
             {
-                object resultElement = ConvertTo(valueAsArray.GetValue(i), resultElementType, false, formatProvider, backupTable);
+                object resultElement = ConvertTo(
+                    valueAsArray.GetValue(i),
+                    resultElementType,
+                    recursion: false,
+                    formatProvider,
+                    backupTable);
+
                 resultArray.SetValue(resultElement, i);
             }
 
@@ -3468,9 +3790,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Element conversion exception: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastExceptionEnumerableToArray", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastExceptionEnumerableToArray",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -3500,9 +3827,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Element conversion exception: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastExceptionScalarToArray", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastExceptionScalarToArray",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -3523,9 +3855,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Integer to System.Enum exception: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastExceptionIntegerToEnum", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastExceptionIntegerToEnum",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
 
             // Check if the result is a defined enum..otherwise throw an error
@@ -3570,17 +3907,27 @@ namespace System.Management.Automation
                 catch (Exception ex) // Enum.Parse might throw unadvertised exceptions
                 {
                     typeConversion.WriteLine("Case insensitive Enum.Parse threw an exception.");
-                    throw new PSInvalidCastException("CaseInsensitiveEnumParseThrewAnException", ex,
-                            ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                            valueToConvert.ToString(), resultType.ToString(), ex.Message);
+
+                    throw new PSInvalidCastException(
+                        "CaseInsensitiveEnumParseThrewAnException",
+                        innerException: ex,
+                        ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        ex.Message);
                 }
             }
             catch (Exception e) // Enum.Parse might throw unadvertised exceptions
             {
                 typeConversion.WriteLine("Case Sensitive Enum.Parse threw an exception.");
-                throw new PSInvalidCastException("CaseSensitiveEnumParseThrewAnException", e,
-                        ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+
+                throw new PSInvalidCastException(
+                    "CaseSensitiveEnumParseThrewAnException",
+                    innerException: e,
+                    ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
 
             if (result == null)
@@ -3591,12 +3938,18 @@ namespace System.Management.Automation
                     string enumValue = EnumMinimumDisambiguation.EnumDisambiguate(valueAsString, resultType);
                     result = Enum.Parse(resultType, enumValue);
                 }
-                catch (Exception e) // Wrap exceptions in type conversion exceptions
+                // Wrap exceptions in type conversion exceptions
+                catch (Exception e)
                 {
                     typeConversion.WriteLine("Substring disambiguation threw an exception.");
-                    throw new PSInvalidCastException("SubstringDisambiguationEnumParseThrewAnException", e,
-                            ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                            valueToConvert.ToString(), resultType.ToString(), e.Message);
+
+                    throw new PSInvalidCastException(
+                        "SubstringDisambiguationEnumParseThrewAnException",
+                        innerException: e,
+                        ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
 
@@ -3628,23 +3981,38 @@ namespace System.Management.Automation
                     // If the object wasn't a string, then we'll try and convert it into an enum value,
                     // then convert the enum back to a string and finally append it to the string builder to
                     // preserve consistent semantics between quoted and unquoted lists...
-                    object tempResult = ConvertTo(e.Current, resultType, recursion, formatProvider, backupTable);
+                    object tempResult = ConvertTo(
+                        enumerator.Current,
+                        resultType, recursion,
+                        formatProvider,
+                        backupTable);
+
                     if (tempResult != null)
                     {
                         sbResult.Append(tempResult.ToString());
                     }
                     else
                     {
-                        throw new PSInvalidCastException("InvalidCastEnumStringNotFound", null,
-                          ExtendedTypeSystem.InvalidCastExceptionEnumerationNoValue,
-                            e.Current, resultType, EnumSingleTypeConverter.EnumValues(resultType));
+                        throw new PSInvalidCastException(
+                            "InvalidCastEnumStringNotFound",
+                            innerException: null,
+                            ExtendedTypeSystem.InvalidCastExceptionEnumerationNoValue,
+                            enumerator.Current,
+                            resultType,
+                            EnumSingleTypeConverter.EnumValues(resultType));
                     }
                 }
 
                 sbResult.Append(current);
             }
 
-            return ConvertStringToEnum(sbResult.ToString(), resultType, recursion, originalValueToConvert, formatProvider, backupTable);
+            return ConvertStringToEnum(
+                sbResult.ToString(),
+                resultType,
+                recursion,
+                originalValueToConvert,
+                formatProvider,
+                backupTable);
         }
 
         private class PSMethodToDelegateConverter
@@ -3701,9 +4069,14 @@ namespace System.Management.Automation
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("PSMethod to Delegate exception: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastExceptionPSMethodToDelegate", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastExceptionPSMethodToDelegate",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -3729,18 +4102,30 @@ namespace System.Management.Automation
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception calling Parse method with CultureInfo: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastParseTargetInvocationWithFormatProvider", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine(
+                        "Exception calling Parse method with CultureInfo: \"{0}\".",
+                        innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastParseTargetInvocationWithFormatProvider",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Exception calling Parse method with CultureInfo: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastParseExceptionWithFormatProvider", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastParseExceptionWithFormatProvider",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
 
@@ -3760,18 +4145,28 @@ namespace System.Management.Automation
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception calling Parse method: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastParseTargetInvocation", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine("Exception calling Parse method: \"{0}\".", innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastParseTargetInvocation",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Exception calling Parse method: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastParseException", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastParseException",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -3796,18 +4191,28 @@ namespace System.Management.Automation
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorTargetInvocationException", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorTargetInvocationException",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorException", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorException",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -3899,18 +4304,30 @@ namespace System.Management.Automation
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception invoking IEnumerable Constructor: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorTargetInvocationException", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine(
+                        "Exception invoking IEnumerable Constructor: \"{0}\".",
+                        innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorTargetInvocationException",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Exception invoking IEnumerable Constructor: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorException", e,
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorException",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -3968,61 +4385,103 @@ namespace System.Management.Automation
                         if (psobject != null)
                         {
                             // Use PSObject properties to perform conversion.
-                            SetObjectProperties(result, psobject, resultType, CreateMemberNotFoundError, CreateMemberSetValueError, formatProvider, recursion, ignoreUnknownMembers);
+                            SetObjectProperties(
+                                result,
+                                psobject,
+                                resultType,
+                                CreateMemberNotFoundError,
+                                CreateMemberSetValueError,
+                                formatProvider,
+                                recursion,
+                                ignoreUnknownMembers);
                         }
                         else
                         {
                             // Use provided property dictionary to perform conversion.
                             // The method invocation is disabled for "Hashtable to Object conversion" (Win8:649519), but we need to keep it enabled for New-Object for compatibility to PSv2
                             IDictionary properties = valueToConvert as IDictionary;
-                            SetObjectProperties(result, properties, resultType, CreateMemberNotFoundError, CreateMemberSetValueError, enableMethodCall: false);
+                            SetObjectProperties(
+                                result,
+                                properties,
+                                resultType,
+                                CreateMemberNotFoundError,
+                                CreateMemberSetValueError,
+                                enableMethodCall: false);
                         }
 
                         typeConversion.WriteLine("Constructor result: \"{0}\".", result);
                     }
                     else
                     {
-                        RuntimeException rte = InterpreterError.NewInterpreterException(valueToConvert, typeof(RuntimeException), null,
-                            "HashtableToObjectConversionNotSupportedInDataSection", ParserStrings.HashtableToObjectConversionNotSupportedInDataSection, resultType.ToString());
-                        throw rte;
+                        throw InterpreterError.NewInterpreterException(
+                            valueToConvert,
+                            typeof(RuntimeException),
+                            errorPosition: null,
+                            "HashtableToObjectConversionNotSupportedInDataSection",
+                            ParserStrings.HashtableToObjectConversionNotSupportedInDataSection,
+                            resultType.ToString());
                     }
 
                     return result;
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorTargetInvocationException", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorTargetInvocationException",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (InvalidOperationException e)
                 {
-                    Exception inner = e.InnerException ?? e;
-                    throw new PSInvalidCastException("ObjectCreationError", e,
-                        ExtendedTypeSystem.ObjectCreationError, resultType.ToString(), inner.Message);
+                    Exception innerException = e.InnerException ?? e;
+
+                    throw new PSInvalidCastException(
+                        "ObjectCreationError",
+                        innerException: e,
+                        ExtendedTypeSystem.ObjectCreationError,
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (SetValueException e)
                 {
-                    Exception inner = e.InnerException ?? e;
-                    throw new PSInvalidCastException("ObjectCreationError", inner,
-                        ExtendedTypeSystem.ObjectCreationError, resultType.ToString(), inner.Message);
+                    Exception innerException = e.InnerException ?? e;
+
+                    throw new PSInvalidCastException(
+                        "ObjectCreationError",
+                        innerException,
+                        ExtendedTypeSystem.ObjectCreationError,
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (RuntimeException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorException", inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorException",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Exception invoking Constructor: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastConstructorException", e,
+                    throw new PSInvalidCastException(
+                        "InvalidCastConstructorException",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -4045,18 +4504,28 @@ namespace System.Management.Automation
                 }
                 catch (TargetInvocationException ex)
                 {
-                    Exception inner = ex.InnerException ?? ex;
-                    typeConversion.WriteLine("Cast operator exception: \"{0}\".", inner.Message);
-                    throw new PSInvalidCastException("InvalidCastTargetInvocationException" + cast.Name, inner,
+                    Exception innerException = ex.InnerException ?? ex;
+                    typeConversion.WriteLine("Cast operator exception: \"{0}\".", innerException.Message);
+
+                    throw new PSInvalidCastException(
+                        $"InvalidCastTargetInvocationException{cast.Name}",
+                        innerException,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), inner.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        innerException.Message);
                 }
                 catch (Exception e)
                 {
                     typeConversion.WriteLine("Cast operator exception: \"{0}\".", e.Message);
-                    throw new PSInvalidCastException("InvalidCastException" + cast.Name, e,
+
+                    throw new PSInvalidCastException(
+                        $"InvalidCastException{cast.Name}",
+                        innerException: e,
                         ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                        valueToConvert.ToString(),
+                        resultType.ToString(),
+                        e.Message);
                 }
             }
         }
@@ -4078,9 +4547,14 @@ namespace System.Management.Automation
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception converting with IConvertible: \"{0}\".", e.Message);
-                throw new PSInvalidCastException("InvalidCastIConvertible", e,
+
+                throw new PSInvalidCastException(
+                    "InvalidCastIConvertible",
+                    innerException: e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    valueToConvert.ToString(),
+                    resultType.ToString(),
+                    e.Message);
             }
         }
 
@@ -4096,17 +4570,29 @@ namespace System.Management.Automation
             // equivalent of that number...
             if (originalValueToConvert != null && originalValueToConvert.TokenText != null)
             {
-                return LanguagePrimitives.ConvertTo(originalValueToConvert.TokenText,
-                    resultType, recursion, formatProvider, backupTable);
+                return ConvertTo(
+                    originalValueToConvert.TokenText,
+                    resultType,
+                    recursion,
+                    formatProvider,
+                    backupTable);
             }
             else
             {
                 // Convert the source object to a string...
-                string s = (string)LanguagePrimitives.ConvertTo(valueToConvert,
-                    typeof(string), recursion, formatProvider, backupTable);
+                string sourceAsString = (string)ConvertTo(
+                    valueToConvert,
+                    typeof(string),
+                    recursion,
+                    formatProvider,
+                    backupTable);
                 // And try and convert that string to the target type...
-                return LanguagePrimitives.ConvertTo(s,
-                    resultType, recursion, formatProvider, backupTable);
+                return ConvertTo(
+                    sourceAsString,
+                    resultType,
+                    recursion,
+                    formatProvider,
+                    backupTable);
             }
         }
 
@@ -4123,20 +4609,29 @@ namespace System.Management.Automation
                 IFormatProvider formatProvider,
                 TypeTable backupTable)
             {
-                object result = null;
-
                 if (tryfirstConverter != null)
                 {
                     try
                     {
-                        return tryfirstConverter(valueToConvert, resultType, recursion, originalValueToConvert, formatProvider, backupTable);
+                        return tryfirstConverter(
+                            valueToConvert,
+                            resultType,
+                            recursion,
+                            originalValueToConvert,
+                            formatProvider,
+                            backupTable);
                     }
                     catch (InvalidCastException)
                     {
                     }
                 }
 
-                if (IsCustomTypeConversion(originalValueToConvert ?? valueToConvert, resultType, formatProvider, out result, backupTable))
+                if (IsCustomTypeConversion(
+                    originalValueToConvert ?? valueToConvert,
+                    resultType,
+                    formatProvider,
+                    out object result,
+                    backupTable))
                 {
                     typeConversion.WriteLine("Custom Type Conversion succeeded.");
                     return result;
@@ -4144,12 +4639,22 @@ namespace System.Management.Automation
 
                 if (fallbackConverter != null)
                 {
-                    return fallbackConverter(valueToConvert, resultType, recursion, originalValueToConvert, formatProvider, backupTable);
+                    return fallbackConverter(
+                        valueToConvert,
+                        resultType,
+                        recursion,
+                        originalValueToConvert,
+                        formatProvider,
+                        backupTable);
                 }
 
-                throw new PSInvalidCastException("ConvertToFinalInvalidCastException", null,
+                throw new PSInvalidCastException(
+                    "ConvertToFinalInvalidCastException",
+                    innerException: null,
                     ExtendedTypeSystem.InvalidCastException,
-                    valueToConvert.ToString(), ObjectToTypeNameString(valueToConvert), resultType.ToString());
+                    valueToConvert.ToString(),
+                    ObjectToTypeNameString(valueToConvert),
+                    resultType.ToString());
             }
         }
 
@@ -4336,12 +4841,13 @@ namespace System.Management.Automation
 
             ConversionRank Rank { get; }
 
-            object Invoke(object valueToConvert,
-                          Type resultType,
-                          bool recurse,
-                          PSObject originalValueToConvert,
-                          IFormatProvider formatProvider,
-                          TypeTable backupTable);
+            object Invoke(
+                object valueToConvert,
+                Type resultType,
+                bool recurse,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable);
         }
 
         [System.Diagnostics.DebuggerDisplay("{_converter.Method.Name}")]
@@ -4592,7 +5098,13 @@ namespace System.Management.Automation
                     }
 
                     // Win8:649519
-                    return SetObjectProperties(o, properties, resultType, memberNotFoundErrorAction, memberSetValueErrorAction, enableMethodCall: false);
+                    return SetObjectProperties(
+                        obj,
+                        properties,
+                        resultType,
+                        memberNotFoundErrorAction,
+                        memberSetValueErrorAction,
+                        enableMethodCall: false);
                 }
                 catch (SetValueException)
                 { }
@@ -4606,7 +5118,13 @@ namespace System.Management.Automation
                 if (dictionary != null)
                 {
                     // Win8:649519
-                    return SetObjectProperties(o, dictionary, resultType, memberNotFoundErrorAction, memberSetValueErrorAction, enableMethodCall: false);
+                    return SetObjectProperties(
+                        obj,
+                        dictionary,
+                        resultType,
+                        memberNotFoundErrorAction,
+                        memberSetValueErrorAction,
+                        enableMethodCall: false);
                 }
                 else
                 {
@@ -4622,14 +5140,26 @@ namespace System.Management.Automation
 
                         try
                         {
-                            return SetObjectProperties(o, properties, resultType, memberNotFoundErrorAction, memberSetValueErrorAction, false, formatProvider, recursion, ignoreUnknownMembers);
+                            return SetObjectProperties(
+                                obj,
+                                properties,
+                                resultType,
+                                memberNotFoundErrorAction,
+                                memberSetValueErrorAction,
+                                enableMethodCall: false,
+                                formatProvider,
+                                recursion,
+                                ignoreUnknownMembers);
                         }
                         catch (InvalidOperationException exception)
                         {
-                            throw new PSInvalidCastException("ConvertToFinalInvalidCastException", exception,
-                                 ExtendedTypeSystem.InvalidCastException,
-                                 psObject.ToString(), ObjectToTypeNameString(psObject),
-                                 resultType.ToString());
+                            throw new PSInvalidCastException(
+                                "ConvertToFinalInvalidCastException",
+                                exception,
+                                ExtendedTypeSystem.InvalidCastException,
+                                psObject.ToString(),
+                                ObjectToTypeNameString(psObject),
+                                resultType.ToString());
                         }
                     }
                 }
@@ -4698,15 +5228,30 @@ namespace System.Management.Automation
                                             PSObject propertyValue = prop.Value as PSObject;
                                             if (propertyValue != null)
                                             {
-                                                propValue = LanguagePrimitives.ConvertPSObjectToType(propertyValue, propType, recursion, formatProvider, ignoreUnknownMembers);
+                                                propValue = ConvertPSObjectToType(
+                                                    propertyValue,
+                                                    propType,
+                                                    recursion,
+                                                    formatProvider,
+                                                    ignoreUnknownMembers);
                                             }
                                             else if (prop.Value is PSCustomObject)
                                             {
-                                                propValue = LanguagePrimitives.ConvertPSObjectToType(new PSObject(prop.Value), propType, recursion, formatProvider, ignoreUnknownMembers);
+                                                propValue = ConvertPSObjectToType(
+                                                    new PSObject(prop.Value),
+                                                    propType,
+                                                    recursion,
+                                                    formatProvider,
+                                                    ignoreUnknownMembers);
                                             }
                                             else
                                             {
-                                                propValue = LanguagePrimitives.ConvertTo(prop.Value, propType, recursion, formatProvider, null);
+                                                propValue = ConvertTo(
+                                                    prop.Value,
+                                                    propType,
+                                                    recursion,
+                                                    formatProvider,
+                                                    backupTypeTable: null);
                                             }
                                         }
                                         catch (SetValueException)
@@ -4948,7 +5493,11 @@ namespace System.Management.Automation
         internal static object ThrowInvalidConversionException(object valueToConvert, Type resultType)
         {
             typeConversion.WriteLine("Issuing an error message about not being able to convert to non-core type.");
-            throw new PSInvalidCastException("ConversionSupportedOnlyToCoreTypes", null, ExtendedTypeSystem.InvalidCastExceptionNonCoreType, resultType.ToString());
+            throw new PSInvalidCastException(
+                "ConversionSupportedOnlyToCoreTypes",
+                innerException: null,
+                ExtendedTypeSystem.InvalidCastExceptionNonCoreType,
+                resultType.ToString());
         }
 
         private static IConversionData FigureLanguageConversion(
@@ -5017,7 +5566,11 @@ namespace System.Management.Automation
                         return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertRelatedArrays, ConversionRank.Language);
                     }
 
-                    return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertUnrelatedArrays, ConversionRank.UnrelatedArrays);
+                    return CacheConversion<object>(
+                        fromType,
+                        toType,
+                        ConvertUnrelatedArrays,
+                        ConversionRank.UnrelatedArrays);
                 }
 
                 if (LanguagePrimitives.IsTypeEnumerable(fromType))
@@ -5055,7 +5608,11 @@ namespace System.Management.Automation
             {
                 if (typeof(IDictionary).IsAssignableFrom(fromType))
                 {
-                    return CacheConversion<Hashtable>(fromType, toType, LanguagePrimitives.ConvertIDictionaryToHashtable, ConversionRank.Language);
+                    return CacheConversion<Hashtable>(
+                        fromType,
+                        toType,
+                        ConvertIDictionaryToHashtable,
+                        ConversionRank.Language);
                 }
                 else
                 {
@@ -5181,16 +5738,25 @@ namespace System.Management.Automation
                 bool typesMatchExactly, allTypesMatchExactly;
                 Type sourceReturnType = argumentTypes[length - 1];
 
-                if (ProjectedTypeMatchesTargetType(sourceReturnType, targetReturnType, TypeMatchingContext.ReturnType, out typesMatchExactly))
+                if (ProjectedTypeMatchesTargetType(
+                    sourceReturnType, targetReturnType,
+                    TypeMatchingContext.ReturnType,
+                    out bool typesMatchExactly))
                 {
                     allTypesMatchExactly = typesMatchExactly;
                     for (int i = 0; i < targetParameters.Length; i++)
                     {
-                        var targetParam = targetParameters[i];
-                        var sourceType = argumentTypes[i];
-                        var matchContext = targetParam.IsOut ? TypeMatchingContext.OutParameterType : TypeMatchingContext.ParameterType;
+                        ParameterInfo targetParam = targetParameters[i];
+                        Type sourceType = argumentTypes[i];
+                        TypeMatchingContext matchContext = targetParam.IsOut
+                            ? TypeMatchingContext.OutParameterType
+                            : TypeMatchingContext.ParameterType;
 
-                        if (!ProjectedTypeMatchesTargetType(sourceType, targetParam.ParameterType, matchContext, out typesMatchExactly))
+                        if (!ProjectedTypeMatchesTargetType(
+                            sourceType,
+                            targetParam.ParameterType,
+                            matchContext,
+                            out typesMatchExactly))
                         {
                             return false;
                         }
@@ -5205,7 +5771,11 @@ namespace System.Management.Automation
                 return false;
             }
 
-            private static bool ProjectedTypeMatchesTargetType(Type sourceType, Type targetType, TypeMatchingContext matchContext, out bool matchExactly)
+            private static bool ProjectedTypeMatchesTargetType(
+                Type sourceType,
+                Type targetType,
+                TypeMatchingContext matchContext,
+                out bool matchExactly)
             {
                 matchExactly = false;
                 if (targetType.IsByRef || targetType.IsPointer)
@@ -5282,7 +5852,12 @@ namespace System.Management.Automation
                 MethodInfo parse = null;
                 try
                 {
-                    parse = toType.GetMethod("Parse", parseFlags, null, new Type[2] { typeof(string), typeof(IFormatProvider) }, null);
+                    parse = toType.GetMethod(
+                        name: "Parse",
+                        bindingAttr: parseFlags,
+                        binder: null,
+                        types: new Type[2] { typeof(string), typeof(IFormatProvider) },
+                        modifiers: null);
                 }
                 catch (AmbiguousMatchException e)
                 {
@@ -5302,7 +5877,12 @@ namespace System.Management.Automation
 
                 try
                 {
-                    parse = toType.GetMethod("Parse", parseFlags, null, new Type[1] { typeof(string) }, null);
+                    parse = toType.GetMethod(
+                        name: "Parse",
+                        bindingAttr: parseFlags,
+                        binder: null,
+                        types: new Type[1] { typeof(string) },
+                        modifiers: null);
                 }
                 catch (AmbiguousMatchException e)
                 {
@@ -5357,9 +5937,8 @@ namespace System.Management.Automation
                     Type[] argTypes = toType.GetGenericArguments();
                     if (argTypes.Length != 1)
                     {
-                        typeConversion
-                            .WriteLine(
-                                "toType has more than one generic arguments. Here we only care about the toType which contains only one generic argument and whose constructor takes IEnumerable<T>, ICollection<T> or IList<T>.");
+                        typeConversion.WriteLine(
+                            "toType has more than one generic arguments. Here we only care about the toType which contains only one generic argument and whose constructor takes IEnumerable<T>, ICollection<T> or IList<T>.");
                         return null;
                     }
 
@@ -5403,12 +5982,19 @@ namespace System.Management.Automation
                     {
                         Type listClosedType = typeof(List<>).MakeGenericType(elementType);
                         ConstructorInfo listCtor = listClosedType.GetConstructor(new Type[] { typeof(int) });
-                        converter.ListCtorLambda = CreateCtorLambdaClosure<int, IList>(listCtor, typeof(int), false);
+
+                        converter.ListCtorLambda = CreateCtorLambdaClosure<int, IList>(
+                            listCtor,
+                            typeof(int),
+                            useExplicitConversion: false);
 
                         ParameterInfo[] targetParams = resultConstructor.GetParameters();
                         Type targetParamType = targetParams[0].ParameterType;
-                        converter.TargetCtorLambda = CreateCtorLambdaClosure<IList, object>(resultConstructor,
-                                                                                            targetParamType, false);
+
+                        converter.TargetCtorLambda = CreateCtorLambdaClosure<IList, object>(
+                            resultConstructor,
+                            targetParamType,
+                            useExplicitConversion: false);
 
                         converter.ElementType = elementType;
                         converter.IsScalar = isScalar;
@@ -5425,8 +6011,10 @@ namespace System.Management.Automation
                 }
                 else
                 {
-                    typeConversion.WriteLine("Fail to figure out the conversion from \"{0}\" to \"{1}\"",
-                                             fromType.FullName, toType.FullName);
+                    typeConversion.WriteLine(
+                        "Failed to figure out the conversion from \"{0}\" to \"{1}\"",
+                        fromType.FullName,
+                        toType.FullName);
                     return null;
                 }
             }
@@ -5453,7 +6041,10 @@ namespace System.Management.Automation
         {
             ParameterExpression paramExpr = Expression.Parameter(typeof(T1), "args");
             Expression castParamExpr = useExplicitConversion
-                ? (Expression)Expression.Call(CachedReflectionInfo.Convert_ChangeType, paramExpr, Expression.Constant(realParamType, typeof(Type)))
+                ? (Expression)Expression.Call(
+                    CachedReflectionInfo.Convert_ChangeType,
+                    paramExpr,
+                    Expression.Constant(realParamType, typeof(Type)))
                 : Expression.Convert(paramExpr, realParamType);
             NewExpression ctorExpr = Expression.New(ctor, castParamExpr.Cast(realParamType));
             return Expression.Lambda<Func<T1, T2>>(ctorExpr.Cast(typeof(T2)), paramExpr).Compile();
@@ -5464,7 +6055,8 @@ namespace System.Management.Automation
             if (IsIntegralType(fromType) &&
                 (typeof(IList).IsAssignableFrom(toType) || typeof(ICollection).IsAssignableFrom(toType)))
             {
-                typeConversion.WriteLine("Ignoring the collection constructor that takes an integer, since this is not semantically a conversion.");
+                typeConversion.WriteLine(
+                    "Ignoring the collection constructor that takes an integer, since this is not semantically a conversion.");
                 return null;
             }
 
@@ -5494,8 +6086,14 @@ namespace System.Management.Automation
             {
                 ParameterInfo[] targetParams = resultConstructor.GetParameters();
                 Type targetParamType = targetParams[0].ParameterType;
-                bool useExplicitConversion = targetParamType.IsValueType && fromType != targetParamType && Nullable.GetUnderlyingType(targetParamType) == null;
-                converter.TargetCtorLambda = CreateCtorLambdaClosure<object, object>(resultConstructor, targetParamType, useExplicitConversion);
+                bool useExplicitConversion = targetParamType.IsValueType
+                    && fromType != targetParamType
+                    && Nullable.GetUnderlyingType(targetParamType) == null;
+
+                converter.TargetCtorLambda = CreateCtorLambdaClosure<object, object>(
+                    resultConstructor,
+                    targetParamType,
+                    useExplicitConversion);
             }
             catch (Exception e)
             {
@@ -5649,8 +6247,11 @@ namespace System.Management.Automation
 
             if (toType.IsAssignableFrom(fromType))
             {
-                return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertAssignableFrom,
-                                               toType == fromType ? ConversionRank.Identity : ConversionRank.Assignable);
+                return CacheConversion<object>(
+                    fromType,
+                    toType,
+                    ConvertAssignableFrom,
+                    toType == fromType ? ConversionRank.Identity : ConversionRank.Assignable);
             }
 
             if (fromType.IsByRefLike || toType.IsByRefLike)
@@ -5703,9 +6304,13 @@ namespace System.Management.Automation
                 return CacheConversion(fromType, toType, ConvertNoConversion, ConversionRank.None);
             }
 
-            PSConverter<object> valueDependentConversion = null;
             ConversionRank valueDependentRank = ConversionRank.None;
-            IConversionData conversionData = FigureLanguageConversion(fromType, toType, out valueDependentConversion, out valueDependentRank);
+            IConversionData conversionData = FigureLanguageConversion(
+                fromType,
+                toType,
+                out PSConverter<object> valueDependentConversion,
+                out valueDependentRank);
+
             if (conversionData != null)
             {
                 return conversionData;
