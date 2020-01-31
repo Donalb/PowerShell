@@ -867,7 +867,12 @@ namespace System.Management.Automation
         /// <param name="result">Less than zero if first is smaller than second, more than  zero if it is greater or zero if they are the same.</param>
         /// <returns>True if the comparison was successful, false otherwise.</returns>
         /// <exception cref="ArgumentException">The parameter <paramref name="formatProvider"/> is not a <see cref="CultureInfo"/>.</exception>
-        public static bool TryCompare(object first, object second, bool ignoreCase, IFormatProvider formatProvider, out int result)
+        public static bool TryCompare(
+            object first,
+            object second,
+            bool ignoreCase,
+            IFormatProvider formatProvider,
+            out int result)
         {
             result = 0;
             if (formatProvider == null)
@@ -1685,7 +1690,12 @@ namespace System.Management.Automation
         /// <param name="formatProvider">To be used in custom type conversions, to call parse and to call Convert.ChangeType.</param>
         /// <param name="ignoreUnknownMembers">Indicates if Unknown members in the psobject have to be ignored if the corresponding members in resultType do not exist.</param>
         /// <returns>Converted value.</returns>
-        public static object ConvertPSObjectToType(PSObject valueToConvert, Type resultType, bool recursion, IFormatProvider formatProvider, bool ignoreUnknownMembers)
+        public static object ConvertPSObjectToType(
+            PSObject valueToConvert,
+            Type resultType,
+            bool recursion,
+            IFormatProvider formatProvider,
+            bool ignoreUnknownMembers)
         {
             if (valueToConvert != null)
             {
@@ -1781,7 +1791,11 @@ namespace System.Management.Automation
         /// <param name="formatProvider">Governing conversion of types.</param>
         /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
         /// <returns>False for conversion failure, true for success.</returns>
-        public static bool TryConvertTo(object valueToConvert, Type resultType, IFormatProvider formatProvider, out object result)
+        public static bool TryConvertTo(
+            object valueToConvert,
+            Type resultType,
+            IFormatProvider formatProvider,
+            out object result)
         {
             result = null;
             try
@@ -1820,10 +1834,6 @@ namespace System.Management.Automation
 
         internal class EnumMultipleTypeConverter : EnumSingleTypeConverter
         {
-            public override object ConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
-            {
-                return EnumSingleTypeConverter.BaseConvertFrom(sourceValue, destinationType, formatProvider, ignoreCase, true);
-            }
             public override object ConvertFrom(
                 object sourceValue,
                 Type destinationType,
@@ -1841,7 +1851,12 @@ namespace System.Management.Automation
         {
             private class EnumHashEntry
             {
-                internal EnumHashEntry(string[] names, Array values, UInt64 allValues, bool hasNegativeValue, bool hasFlagsAttribute)
+                internal EnumHashEntry(
+                    string[] names,
+                    Array values,
+                    ulong allValues,
+                    bool hasNegativeValue,
+                    bool hasFlagsAttribute)
                 {
                     this.names = names;
                     this.values = values;
@@ -2011,7 +2026,11 @@ namespace System.Management.Automation
             /// This will enable callers to take different forms of input -> convert to enum using
             /// Enum.Object -> then validate using this method.
             /// </remarks>
-            internal static void ThrowForUndefinedEnum(string errorId, object enumValue, object valueToUseToThrow, Type enumType)
+            internal static void ThrowForUndefinedEnum(
+                string errorId,
+                object enumValue,
+                object valueToUseToThrow,
+                Type enumType)
             {
                 if (!IsDefinedEnum(enumValue, enumType))
                 {
@@ -2034,7 +2053,12 @@ namespace System.Management.Automation
                 bool ignoreCase)
                     => BaseConvertFrom(sourceValue, destinationType, formatProvider, ignoreCase, multipleValues: false);
 
-            protected static object BaseConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase, bool multipleValues)
+            protected static object BaseConvertFrom(
+                object sourceValue,
+                Type destinationType,
+                IFormatProvider formatProvider,
+                bool ignoreCase,
+                bool multipleValues)
             {
                 Diagnostics.Assert(sourceValue != null, "the type converter has a special case for null source values");
                 string sourceValueString = sourceValue as string;
@@ -2193,7 +2217,11 @@ namespace System.Management.Automation
         /// <param name="originalType">Type of the only parameter the operator method should have.</param>
         /// <param name="resultType">Return type of the operator method.</param>
         /// <returns>A cast operator method, or null if not found.</returns>
-        private static MethodInfo FindCastOperator(string methodName, Type targetType, Type originalType, Type resultType)
+        private static MethodInfo FindCastOperator(
+            string methodName,
+            Type targetType,
+            Type originalType,
+            Type resultType)
         {
             using (typeConversion.TraceScope("Looking for \"{0}\" cast operator.", methodName))
             {
@@ -2235,12 +2263,13 @@ namespace System.Management.Automation
         }
 
 #if !UNIX
-        private static ManagementObject ConvertToWMI(object valueToConvert,
-                                                     Type resultType,
-                                                     bool recursion,
-                                                     PSObject originalValueToConvert,
-                                                     IFormatProvider formatProvider,
-                                                     TypeTable backupTable)
+        private static ManagementObject ConvertToWMI(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to a ManagementObject.");
 
@@ -2279,14 +2308,16 @@ namespace System.Management.Automation
             }
         }
 
-        private static ManagementObjectSearcher ConvertToWMISearcher(object valueToConvert,
-                                                                     Type resultType,
-                                                                     bool recursion,
-                                                                     PSObject originalValueToConvert,
-                                                                     IFormatProvider formatProvider,
-                                                                     TypeTable backupTable)
+        private static ManagementObjectSearcher ConvertToWMISearcher(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to a collection of ManagementObjects.");
+
             string valueToConvertString;
             try
             {
@@ -2314,12 +2345,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static ManagementClass ConvertToWMIClass(object valueToConvert,
-                                                         Type resultType,
-                                                         bool recursion,
-                                                         PSObject originalValueToConvert,
-                                                         IFormatProvider formatProvider,
-                                                         TypeTable backupTable)
+        private static ManagementClass ConvertToWMIClass(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to a ManagementClass.");
 
@@ -2359,12 +2391,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static DirectoryEntry ConvertToADSI(object valueToConvert,
-                                                    Type resultType,
-                                                    bool recursion,
-                                                    PSObject originalValueToConvert,
-                                                    IFormatProvider formatProvider,
-                                                    TypeTable backupTable)
+        private static DirectoryEntry ConvertToADSI(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to DirectoryEntry.");
 
@@ -2395,12 +2428,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static DirectorySearcher ConvertToADSISearcher(object valueToConvert,
-                                                               Type resultType,
-                                                               bool recursion,
-                                                               PSObject originalValueToConvert,
-                                                               IFormatProvider formatProvider,
-                                                               TypeTable backupTable)
+        private static DirectorySearcher ConvertToADSISearcher(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to ADSISearcher");
 
@@ -2418,12 +2452,13 @@ namespace System.Management.Automation
         }
 #endif
 
-        private static StringCollection ConvertToStringCollection(object valueToConvert,
-                                                                  Type resultType,
-                                                                  bool recursion,
-                                                                  PSObject originalValueToConvert,
-                                                                  IFormatProvider formatProvider,
-                                                                  TypeTable backupTable)
+        private static StringCollection ConvertToStringCollection(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Standard type conversion to a StringCollection.");
             var stringCollection = new StringCollection();
@@ -2431,7 +2466,12 @@ namespace System.Management.Automation
             return stringCollection;
         }
 
-        private static void AddItemsToCollection(object valueToConvert, Type resultType, IFormatProvider formatProvider, TypeTable backupTable, StringCollection stringCollection)
+        private static void AddItemsToCollection(
+            object valueToConvert,
+            Type resultType,
+            IFormatProvider formatProvider,
+            TypeTable backupTable,
+            StringCollection stringCollection)
         {
             try
             {
@@ -2453,12 +2493,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static XmlDocument ConvertToXml(object valueToConvert,
-                                                Type resultType,
-                                                bool recursion,
-                                                PSObject originalValueToConvert,
-                                                IFormatProvider formatProvider,
-                                                TypeTable backupTable)
+        private static XmlDocument ConvertToXml(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             using (typeConversion.TraceScope("Standard type conversion to XmlDocument."))
             {
@@ -2509,11 +2550,12 @@ namespace System.Management.Automation
         /// Used by Remoting Rehydration Logic. While Deserializing a remote object,
         /// LocalPipeline.ExecutionContextFromTLS() might return null..In which case this
         /// TypeTable will be used to do the conversion.
-        private static bool IsCustomTypeConversion(object valueToConvert,
-                                                   Type resultType,
-                                                   IFormatProvider formatProvider,
-                                                   out object result,
-                                                   TypeTable backupTypeTable)
+        private static bool IsCustomTypeConversion(
+            object valueToConvert,
+            Type resultType,
+            IFormatProvider formatProvider,
+            out object result,
+            TypeTable backupTypeTable)
         {
             using (typeConversion.TraceScope("Custom type conversion."))
             {
@@ -2644,12 +2686,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertNumericChar(object valueToConvert,
-                                                 Type resultType,
-                                                 bool recursion,
-                                                 PSObject originalValueToConvert,
-                                                 IFormatProvider formatProvider,
-                                                 TypeTable backupTable)
+        private static object ConvertNumericChar(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             try
             {
@@ -2668,12 +2711,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertNumeric(object valueToConvert,
-                                             Type resultType,
-                                             bool recursion,
-                                             PSObject originalValueToConvert,
-                                             IFormatProvider formatProvider,
-                                             TypeTable backupTable)
+        private static object ConvertNumeric(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             try
             {
@@ -2690,12 +2734,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static char[] ConvertStringToCharArray(object valueToConvert,
-                                                       Type resultType,
-                                                       bool recursion,
-                                                       PSObject originalValueToConvert,
-                                                       IFormatProvider formatProvider,
-                                                       TypeTable backupTable)
+        private static char[] ConvertStringToCharArray(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be string");
             typeConversion.WriteLine("Returning value to convert's ToCharArray().");
@@ -2704,12 +2749,13 @@ namespace System.Management.Automation
             return ((string)valueToConvert).ToCharArray();
         }
 
-        private static Regex ConvertStringToRegex(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static Regex ConvertStringToRegex(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be string");
             typeConversion.WriteLine("Returning new RegEx(value to convert).");
@@ -2726,12 +2772,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static Microsoft.Management.Infrastructure.CimSession ConvertStringToCimSession(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static Microsoft.Management.Infrastructure.CimSession ConvertStringToCimSession(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be string");
             typeConversion.WriteLine("Returning CimSession.Create(value to convert).");
@@ -2748,12 +2795,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static Type ConvertStringToType(object valueToConvert,
-                                                Type resultType,
-                                                bool recursion,
-                                                PSObject originalValueToConvert,
-                                                IFormatProvider formatProvider,
-                                                TypeTable backupTable)
+        private static Type ConvertStringToType(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be a string");
             Exception exception;
@@ -2782,12 +2830,13 @@ namespace System.Management.Automation
         /// Therefore, we just add this built-in string-to-uri converter using the same logic 'UriTypeConverter'
         /// is using in FullCLR, so the conversion behavior will be the same on desktop powershell and powershell core.
         /// </summary>
-        private static Uri ConvertStringToUri(object valueToConvert,
-                                              Type resultType,
-                                              bool recursion,
-                                              PSObject originalValueToConvert,
-                                              IFormatProvider formatProvider,
-                                              TypeTable backupTable)
+        private static Uri ConvertStringToUri(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             try
             {
@@ -2831,12 +2880,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertStringToInteger(object valueToConvert,
-                                                     Type resultType,
-                                                     bool recursion,
-                                                     PSObject originalValueToConvert,
-                                                     IFormatProvider formatProvider,
-                                                     TypeTable backupTable)
+        private static object ConvertStringToInteger(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             var strToConvert = valueToConvert as string;
             Diagnostics.Assert(strToConvert != null, "Value to convert must be a string");
@@ -2891,12 +2941,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertStringToDecimal(object valueToConvert,
-                                                     Type resultType,
-                                                     bool recursion,
-                                                     PSObject originalValueToConvert,
-                                                     IFormatProvider formatProvider,
-                                                     TypeTable backupTable)
+        private static object ConvertStringToDecimal(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be a string");
             var strToConvert = valueToConvert as string;
@@ -2942,12 +2993,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertStringToReal(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static object ConvertStringToReal(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be a string");
             var strToConvert = valueToConvert as string;
@@ -2982,67 +3034,73 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertAssignableFrom(object valueToConvert,
-                                                    Type resultType,
-                                                    bool recursion,
-                                                    PSObject originalValueToConvert,
-                                                    IFormatProvider formatProvider,
-                                                    TypeTable backupTable)
+        private static object ConvertAssignableFrom(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Result type is assignable from value to convert's type");
             return valueToConvert;
         }
 
-        private static PSObject ConvertToPSObject(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static PSObject ConvertToPSObject(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Returning PSObject.AsPSObject(valueToConvert).");
             return PSObject.AsPSObject(valueToConvert);
         }
 
-        private static object ConvertToVoid(object valueToConvert,
-                                            Type resultType,
-                                            bool recursion,
-                                            PSObject originalValueToConvert,
-                                            IFormatProvider formatProvider,
-                                            TypeTable backupTable)
+        private static object ConvertToVoid(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("returning AutomationNull.Value.");
             return AutomationNull.Value;
         }
 
-        private static bool ConvertClassToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
+        private static bool ConvertClassToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting ref to boolean.");
             return valueToConvert != null;
         }
 
-        private static bool ConvertValueToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
+        private static bool ConvertValueToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting value to boolean.");
             return true;
         }
 
-        private static bool ConvertStringToBool(object valueToConvert,
-                                                Type resultType,
-                                                bool recursion,
-                                                PSObject originalValueToConvert,
-                                                IFormatProvider formatProvider,
-                                                TypeTable backupTable)
+        private static bool ConvertStringToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting string to boolean.");
             return LanguagePrimitives.IsTrue((string)valueToConvert);
@@ -3170,46 +3228,50 @@ namespace System.Management.Automation
                 parameters).Compile();
         }
 
-        private static bool ConvertCharToBool(object valueToConvert,
-                                              Type resultType,
-                                              bool recursion,
-                                              PSObject originalValueToConvert,
-                                              IFormatProvider formatProvider,
-                                              TypeTable backupTable)
+        private static bool ConvertCharToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting char to boolean.");
             char c = (char)valueToConvert;
             return c != '\0';
         }
 
-        private static bool ConvertSwitchParameterToBool(object valueToConvert,
-                                                         Type resultType,
-                                                         bool recursion,
-                                                         PSObject originalValueToConvert,
-                                                         IFormatProvider formatProvider,
-                                                         TypeTable backupTable)
+        private static bool ConvertSwitchParameterToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting SwitchParameter to boolean.");
             return ((SwitchParameter)valueToConvert).ToBool();
         }
 
-        private static bool ConvertIListToBool(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
+        private static bool ConvertIListToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting IList to boolean.");
             return IsTrue((IList)valueToConvert);
         }
 
-        private static string ConvertNumericToString(object valueToConvert,
-                                                     Type resultType,
-                                                     bool recursion,
-                                                     PSObject originalValueToConvert,
-                                                     IFormatProvider formatProvider,
-                                                     TypeTable backupTable)
+        private static string ConvertNumericToString(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             if (originalValueToConvert != null && originalValueToConvert.TokenText != null)
             {
@@ -3242,12 +3304,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static string ConvertNonNumericToString(object valueToConvert,
-                                                        Type resultType,
-                                                        bool recursion,
-                                                        PSObject originalValueToConvert,
-                                                        IFormatProvider formatProvider,
-                                                        TypeTable backupTable)
+        private static string ConvertNonNumericToString(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             ExecutionContext ecFromTLS = LocalPipeline.GetExecutionContextFromTLS();
             try
@@ -3263,23 +3326,25 @@ namespace System.Management.Automation
             }
         }
 
-        private static Hashtable ConvertIDictionaryToHashtable(object valueToConvert,
-                                                               Type resultType,
-                                                               bool recursion,
-                                                               PSObject originalValueToConvert,
-                                                               IFormatProvider formatProvider,
-                                                               TypeTable backupTable)
+        private static Hashtable ConvertIDictionaryToHashtable(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting to Hashtable.");
             return new Hashtable(valueToConvert as IDictionary);
         }
 
-        private static PSReference ConvertToPSReference(object valueToConvert,
-                                                        Type resultType,
-                                                        bool recursion,
-                                                        PSObject originalValueToConvert,
-                                                        IFormatProvider formatProvider,
-                                                        TypeTable backupTable)
+        private static PSReference ConvertToPSReference(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting to PSReference.");
 
@@ -3290,12 +3355,13 @@ namespace System.Management.Automation
             return PSReference.CreateInstance(valueToConvert, valueToConvert.GetType());
         }
 
-        private static Delegate ConvertScriptBlockToDelegate(object valueToConvert,
-                                                             Type resultType,
-                                                             bool recursion,
-                                                             PSObject originalValueToConvert,
-                                                             IFormatProvider formatProvider,
-                                                             TypeTable backupTable)
+        private static Delegate ConvertScriptBlockToDelegate(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Exception exception = null;
 
@@ -3342,12 +3408,13 @@ namespace System.Management.Automation
                     formatProvider,
                     backupTable);
 
-        private static object ConvertRelatedArrays(object valueToConvert,
-                                                   Type resultType,
-                                                   bool recursion,
-                                                   PSObject originalValueToConvert,
-                                                   IFormatProvider formatProvider,
-                                                   TypeTable backupTable)
+        private static object ConvertRelatedArrays(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("The element type of result is assignable from the element type of the value to convert");
             var originalAsArray = (Array)valueToConvert;
@@ -3356,12 +3423,13 @@ namespace System.Management.Automation
             return newValue;
         }
 
-        private static object ConvertUnrelatedArrays(object valueToConvert,
-                                                     Type resultType,
-                                                     bool recursion,
-                                                     PSObject originalValueToConvert,
-                                                     IFormatProvider formatProvider,
-                                                     TypeTable backupTable)
+        private static object ConvertUnrelatedArrays(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             Array valueAsArray = valueToConvert as Array;
             Type resultElementType = resultType.GetElementType();
@@ -3376,12 +3444,13 @@ namespace System.Management.Automation
             return resultArray;
         }
 
-        private static object ConvertEnumerableToArray(object valueToConvert,
-                                                       Type resultType,
-                                                       bool recursion,
-                                                       PSObject originalValueToConvert,
-                                                       IFormatProvider formatProvider,
-                                                       TypeTable backupTable)
+        private static object ConvertEnumerableToArray(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             try
             {
@@ -3405,12 +3474,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertScalarToArray(object valueToConvert,
-                                                   Type resultType,
-                                                   bool recursion,
-                                                   PSObject originalValueToConvert,
-                                                   IFormatProvider formatProvider,
-                                                   TypeTable backupTable)
+        private static object ConvertScalarToArray(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Value to convert is scalar.");
 
@@ -3436,12 +3506,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertIntegerToEnum(object valueToConvert,
-                                                   Type resultType,
-                                                   bool recursion,
-                                                   PSObject originalValueToConvert,
-                                                   IFormatProvider formatProvider,
-                                                   TypeTable backupTable)
+        private static object ConvertIntegerToEnum(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             object result;
 
@@ -3464,12 +3535,13 @@ namespace System.Management.Automation
             return result;
         }
 
-        private static object ConvertStringToEnum(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static object ConvertStringToEnum(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             string valueAsString = valueToConvert as string;
             object result = null;
@@ -3533,12 +3605,13 @@ namespace System.Management.Automation
             return result;
         }
 
-        private static object ConvertEnumerableToEnum(object valueToConvert,
-                                                      Type resultType,
-                                                      bool recursion,
-                                                      PSObject originalValueToConvert,
-                                                      IFormatProvider formatProvider,
-                                                      TypeTable backupTable)
+        private static object ConvertEnumerableToEnum(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             IEnumerator e = LanguagePrimitives.GetEnumerator(valueToConvert);
             StringBuilder sbResult = new StringBuilder();
@@ -3604,12 +3677,13 @@ namespace System.Management.Automation
                 return result;
             }
 
-            internal Delegate Convert(object valueToConvert,
-                                      Type resultType,
-                                      bool recursion,
-                                      PSObject originalValueToConvert,
-                                      IFormatProvider formatProvider,
-                                      TypeTable backupTable)
+            internal Delegate Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 // We can only possibly convert PSMethod instance of the type PSMethod<T>.
                 // Such a PSMethod essentially represents a set of .NET method overloads.
@@ -3639,12 +3713,13 @@ namespace System.Management.Automation
             // TODO - use an ETS wrapper that generates a dynamic method
             internal MethodInfo parse;
 
-            internal object ConvertWithCulture(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
+            internal object ConvertWithCulture(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 try
                 {
@@ -3669,12 +3744,13 @@ namespace System.Management.Automation
                 }
             }
 
-            internal object ConvertWithoutCulture(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+            internal object ConvertWithoutCulture(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 try
                 {
@@ -3704,12 +3780,13 @@ namespace System.Management.Automation
         {
             internal Func<object, object> TargetCtorLambda;
 
-            internal object Convert(object valueToConvert,
-                                    Type resultType,
-                                    bool recursion,
-                                    PSObject originalValueToConvert,
-                                    IFormatProvider formatProvider,
-                                    TypeTable backupTable)
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 try
                 {
@@ -3752,12 +3829,13 @@ namespace System.Management.Automation
             internal Type ElementType;
             internal bool IsScalar;
 
-            internal object Convert(object valueToConvert,
-                                    Type resultType,
-                                    bool recursion,
-                                    PSObject originalValueToConvert,
-                                    IFormatProvider formatProvider,
-                                    TypeTable backupTable)
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 IList resultAsList = null;
                 Array array = null;
@@ -3953,12 +4031,13 @@ namespace System.Management.Automation
         {
             internal MethodInfo cast;
 
-            internal object Convert(object valueToConvert,
-                                    Type resultType,
-                                    bool recursion,
-                                    PSObject originalValueToConvert,
-                                    IFormatProvider formatProvider,
-                                    TypeTable backupTable)
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 try
                 {
@@ -3982,12 +4061,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertIConvertible(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static object ConvertIConvertible(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             try
             {
@@ -4004,12 +4084,13 @@ namespace System.Management.Automation
             }
         }
 
-        private static object ConvertNumericIConvertible(object valueToConvert,
-                                                         Type resultType,
-                                                         bool recursion,
-                                                         PSObject originalValueToConvert,
-                                                         IFormatProvider formatProvider,
-                                                         TypeTable backupTable)
+        private static object ConvertNumericIConvertible(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             // If the original object was a number, then try and do a conversion on the string
             // equivalent of that number...
@@ -4034,12 +4115,13 @@ namespace System.Management.Automation
             internal PSConverter<object> tryfirstConverter;
             internal PSConverter<object> fallbackConverter;
 
-            internal object Convert(object valueToConvert,
-                                    Type resultType,
-                                    bool recursion,
-                                    PSObject originalValueToConvert,
-                                    IFormatProvider formatProvider,
-                                    TypeTable backupTable)
+            internal object Convert(
+                object valueToConvert,
+                Type resultType,
+                bool recursion,
+                PSObject originalValueToConvert,
+                IFormatProvider formatProvider,
+                TypeTable backupTable)
             {
                 object result = null;
 
@@ -4072,35 +4154,38 @@ namespace System.Management.Automation
         }
 
         #region Delegates converting null
-        private static object ConvertNullToNumeric(object valueToConvert,
-                                                   Type resultType,
-                                                   bool recursion,
-                                                   PSObject originalValueToConvert,
-                                                   IFormatProvider formatProvider,
-                                                   TypeTable backupTable)
+        private static object ConvertNullToNumeric(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to zero.");
             // If the destination type is numeric, convert 0 to resultType
             return System.Convert.ChangeType(0, resultType, CultureInfo.InvariantCulture);
         }
 
-        private static char ConvertNullToChar(object valueToConvert,
-                                              Type resultType,
-                                              bool recursion,
-                                              PSObject originalValueToConvert,
-                                              IFormatProvider formatProvider,
-                                              TypeTable backupTable)
+        private static char ConvertNullToChar(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to '0'.");
             return '\0';
         }
 
-        private static string ConvertNullToString(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recursion,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static string ConvertNullToString(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to \"\".");
             // if the destination type is string, return an empty string...
@@ -4116,12 +4201,13 @@ namespace System.Management.Automation
             TypeTable backupTable)
                 => new PSReference<Null>(null);
 
-        private static object ConvertNullToRef(object valueToConvert,
-                                               Type resultType,
-                                               bool recursion,
-                                               PSObject originalValueToConvert,
-                                               IFormatProvider formatProvider,
-                                               TypeTable backupTable)
+        private static object ConvertNullToRef(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             // if the target type is not a value type, return the original
             // "null" object. Don't just return null because we want to preserve
@@ -4129,12 +4215,13 @@ namespace System.Management.Automation
             return valueToConvert;
         }
 
-        private static bool ConvertNullToBool(object valueToConvert,
-                                              Type resultType,
-                                              bool recursion,
-                                              PSObject originalValueToConvert,
-                                              IFormatProvider formatProvider,
-                                              TypeTable backupTable)
+        private static bool ConvertNullToBool(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to boolean.");
             return false;
@@ -4149,23 +4236,25 @@ namespace System.Management.Automation
             TypeTable backupTable)
                 => null;
 
-        private static SwitchParameter ConvertNullToSwitch(object valueToConvert,
-                                                           Type resultType,
-                                                           bool recursion,
-                                                           PSObject originalValueToConvert,
-                                                           IFormatProvider formatProvider,
-                                                           TypeTable backupTable)
+        private static SwitchParameter ConvertNullToSwitch(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to SwitchParameter(false).");
             return new SwitchParameter(false);
         }
 
-        private static object ConvertNullToVoid(object valueToConvert,
-                                                Type resultType,
-                                                bool recursion,
-                                                PSObject originalValueToConvert,
-                                                IFormatProvider formatProvider,
-                                                TypeTable backupTable)
+        private static object ConvertNullToVoid(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             typeConversion.WriteLine("Converting null to AutomationNull.Value.");
             return AutomationNull.Value;
@@ -4173,24 +4262,26 @@ namespace System.Management.Automation
 
         #endregion Delegates converting null
 
-        private static object ConvertNoConversion(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recurse,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static object ConvertNoConversion(
+            object valueToConvert,
+            Type resultType,
+            bool recurse,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             ThrowInvalidCastException(valueToConvert, resultType);
             Diagnostics.Assert(false, "ThrowInvalidCastException always throws");
             return null;
         }
 
-        private static object ConvertNotSupportedConversion(object valueToConvert,
-                                                  Type resultType,
-                                                  bool recurse,
-                                                  PSObject originalValueToConvert,
-                                                  IFormatProvider formatProvider,
-                                                  TypeTable backupTable)
+        private static object ConvertNotSupportedConversion(
+            object valueToConvert,
+            Type resultType,
+            bool recurse,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable)
         {
             ThrowInvalidConversionException(valueToConvert, resultType);
             Diagnostics.Assert(false, "ThrowInvalidCastException always throws");
@@ -4229,12 +4320,13 @@ namespace System.Management.Automation
             }
         }
 
-        internal delegate T PSConverter<T>(object valueToConvert,
-                                           Type resultType,
-                                           bool recurse,
-                                           PSObject originalValueToConvert,
-                                           IFormatProvider formatProvider,
-                                           TypeTable backupTable);
+        internal delegate T PSConverter<T>(
+            object valueToConvert,
+            Type resultType,
+            bool recurse,
+            PSObject originalValueToConvert,
+            IFormatProvider formatProvider,
+            TypeTable backupTable);
 
         internal delegate object PSNullConverter(object nullOrAutomationNull);
 
@@ -4286,7 +4378,11 @@ namespace System.Management.Automation
         private static readonly Dictionary<ConversionTypePair, IConversionData> s_converterCache =
             new Dictionary<ConversionTypePair, IConversionData>(256);
 
-        private static IConversionData CacheConversion<T>(Type fromType, Type toType, PSConverter<T> converter, ConversionRank rank)
+        private static IConversionData CacheConversion<T>(
+            Type fromType,
+            Type toType,
+            PSConverter<T> converter,
+            ConversionRank rank)
         {
             ConversionTypePair pair = new ConversionTypePair(fromType, toType);
             IConversionData data = null;
@@ -4471,7 +4567,15 @@ namespace System.Management.Automation
             }
         }
 
-        internal static PSObject SetObjectProperties(object o, PSObject psObject, Type resultType, MemberNotFoundError memberNotFoundErrorAction, MemberSetValueError memberSetValueErrorAction, IFormatProvider formatProvider, bool recursion = false, bool ignoreUnknownMembers = false)
+        internal static PSObject SetObjectProperties(
+            object obj,
+            PSObject psObject,
+            Type resultType,
+            MemberNotFoundError memberNotFoundErrorAction,
+            MemberSetValueError memberSetValueErrorAction,
+            IFormatProvider formatProvider,
+            bool recursion = false,
+            bool ignoreUnknownMembers = false)
         {
             // Type conversion from object properties only supported for deserialized types.
             if (Deserializer.IsDeserializedInstanceOfType(psObject, resultType))
@@ -4744,11 +4848,12 @@ namespace System.Management.Automation
         /// <returns>The value converted.</returns>
         /// <exception cref="ArgumentNullException">If resultType is null.</exception>
         /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
-        internal static object ConvertTo(object valueToConvert,
-                                         Type resultType,
-                                         bool recursion,
-                                         IFormatProvider formatProvider,
-                                         TypeTable backupTypeTable)
+        internal static object ConvertTo(
+            object valueToConvert,
+            Type resultType,
+            bool recursion,
+            IFormatProvider formatProvider,
+            TypeTable backupTypeTable)
         {
             using (typeConversion.TraceScope("Converting \"{0}\" to \"{1}\".", valueToConvert, resultType))
             {
@@ -4778,7 +4883,9 @@ namespace System.Management.Automation
         /// <returns>
         /// A two-element tuple indicating [errorId, errorMsg]
         /// </returns>
-        internal static Tuple<string, string> GetInvalidCastMessages(object valueToConvert, Type resultType)
+        internal static (string errorId, string message) GetInvalidCastMessages(
+            object valueToConvert,
+            Type resultType)
         {
             string errorId, errorMsg;
             if (resultType.IsByRefLike)
@@ -4786,33 +4893,45 @@ namespace System.Management.Automation
                 typeConversion.WriteLine("Cannot convert to ByRef-Like types as they should be used on stack only.");
                 errorId = nameof(ExtendedTypeSystem.InvalidCastToByRefLikeType);
                 errorMsg = StringUtil.Format(ExtendedTypeSystem.InvalidCastToByRefLikeType, resultType);
-                return Tuple.Create(errorId, errorMsg);
+
+                return (errorId, errorMsg);
             }
 
             if (PSObject.Base(valueToConvert) == null)
             {
                 if (resultType.IsEnum)
                 {
-                    typeConversion.WriteLine("Issuing an error message about not being able to convert null to an Enum type.");
+                    typeConversion.WriteLine(
+                        "Issuing an error message about not being able to convert null to an Enum type.");
                     // a nice error message specifically for null being converted to enum
                     errorId = "nullToEnumInvalidCast";
-                    errorMsg = StringUtil.Format(ExtendedTypeSystem.InvalidCastExceptionEnumerationNull, resultType,
-                                                 EnumSingleTypeConverter.EnumValues(resultType));
-                    return Tuple.Create(errorId, errorMsg);
+                    errorMsg = StringUtil.Format(
+                        ExtendedTypeSystem.InvalidCastExceptionEnumerationNull,
+                        resultType,
+                        EnumSingleTypeConverter.EnumValues(resultType));
+
+                    return (errorId, errorMsg);
                 }
 
                 typeConversion.WriteLine("Cannot convert null.");
+
                 // finally throw of all other value types...
                 errorId = "nullToObjectInvalidCast";
                 errorMsg = StringUtil.Format(ExtendedTypeSystem.InvalidCastFromNull, resultType.ToString());
-                return Tuple.Create(errorId, errorMsg);
+
+                return (errorId, errorMsg);
             }
 
             typeConversion.WriteLine("Type Conversion failed.");
+
             errorId = "ConvertToFinalInvalidCastException";
-            errorMsg = StringUtil.Format(ExtendedTypeSystem.InvalidCastException, valueToConvert.ToString(),
-                                         ObjectToTypeNameString(valueToConvert), resultType.ToString());
-            return Tuple.Create(errorId, errorMsg);
+            errorMsg = StringUtil.Format(
+                ExtendedTypeSystem.InvalidCastException,
+                valueToConvert.ToString(),
+                ObjectToTypeNameString(valueToConvert),
+                resultType.ToString());
+
+            return (errorId, errorMsg);
         }
 
         // Even though this never returns, expression trees expect non-void values in places, and so it's easier
@@ -4820,8 +4939,8 @@ namespace System.Management.Automation
         internal static object ThrowInvalidCastException(object valueToConvert, Type resultType)
         {
             // Get exception messages (in order): errorId, errorMsg
-            var errorMsgTuple = GetInvalidCastMessages(valueToConvert, resultType);
-            throw new PSInvalidCastException(errorMsgTuple.Item1, errorMsgTuple.Item2, innerException: null);
+            (string errorId, string message) = GetInvalidCastMessages(valueToConvert, resultType);
+            throw new PSInvalidCastException(errorId, message, innerException: null);
         }
 
         // Even though this never returns, expression trees expect non-void values in places, and so it's easier
@@ -4832,9 +4951,11 @@ namespace System.Management.Automation
             throw new PSInvalidCastException("ConversionSupportedOnlyToCoreTypes", null, ExtendedTypeSystem.InvalidCastExceptionNonCoreType, resultType.ToString());
         }
 
-        private static IConversionData FigureLanguageConversion(Type fromType, Type toType,
-                                                               out PSConverter<object> valueDependentConversion,
-                                                               out ConversionRank valueDependentRank)
+        private static IConversionData FigureLanguageConversion(
+            Type fromType,
+            Type toType,
+            out PSConverter<object> valueDependentConversion,
+            out ConversionRank valueDependentRank)
         {
             valueDependentConversion = null;
             valueDependentRank = ConversionRank.None;
@@ -5211,7 +5332,9 @@ namespace System.Management.Automation
         /// <param name="fromType"></param>
         /// <param name="toType"></param>
         /// <returns></returns>
-        internal static Tuple<PSConverter<object>, ConversionRank> FigureIEnumerableConstructorConversion(Type fromType, Type toType)
+        internal static Tuple<PSConverter<object>, ConversionRank> FigureIEnumerableConstructorConversion(
+            Type fromType,
+            Type toType)
         {
             // Win8: 653180. If toType is an Abstract type then we cannot construct it anyway. So, bailing out fast.
             if (toType.IsAbstract == true)
@@ -5323,7 +5446,10 @@ namespace System.Management.Automation
             return null;
         }
 
-        private static Func<T1, T2> CreateCtorLambdaClosure<T1, T2>(ConstructorInfo ctor, Type realParamType, bool useExplicitConversion)
+        private static Func<T1, T2> CreateCtorLambdaClosure<T1, T2>(
+            ConstructorInfo ctor,
+            Type realParamType,
+            bool useExplicitConversion)
         {
             ParameterExpression paramExpr = Expression.Parameter(typeof(T1), "args");
             Expression castParamExpr = useExplicitConversion
@@ -5719,27 +5845,22 @@ namespace System.Management.Automation
             return CacheConversion(typeof(Null), toType, ConvertNoConversion, ConversionRank.None);
         }
 
-        internal static string ObjectToTypeNameString(object o)
+        internal static string ObjectToTypeNameString(object obj)
         {
-            if (o == null)
+            if (obj == null)
             {
                 return "null";
             }
 
-            PSObject pso = PSObject.AsPSObject(o);
-            var typeNames = pso.InternalTypeNames;
-            if ((typeNames != null) && (typeNames.Count > 0))
+            PSObject pso = PSObject.AsPSObject(obj);
+            ConsolidatedString typeNames = pso.InternalTypeNames;
+
+            if (typeNames != null && typeNames.Count > 0)
             {
                 return typeNames[0];
             }
 
-            return Microsoft.PowerShell.ToStringCodeMethods.Type(o.GetType());
-        }
-
-            {
-            }
-
-            return null;
+            return Microsoft.PowerShell.ToStringCodeMethods.Type(obj.GetType());
         }
 
         #endregion type converter
