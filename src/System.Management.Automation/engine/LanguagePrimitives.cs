@@ -697,17 +697,17 @@ namespace System.Management.Automation
 
             // If it's a positive number, including 0, it's greater than null
             // for everything else it's less than zero...
-            switch (value)
+            return value switch
             {
-                case Int16 i16: return Math.Sign(i16) < 0 ? -i : i;
-                case Int32 i32: return Math.Sign(i32) < 0 ? -i : i;
-                case Int64 i64: return Math.Sign(i64) < 0 ? -i : i;
-                case sbyte sby: return Math.Sign(sby) < 0 ? -i : i;
-                case float f: return Math.Sign(f) < 0 ? -i : i;
-                case double d: return Math.Sign(d) < 0 ? -i : i;
-                case decimal de: return Math.Sign(de) < 0 ? -i : i;
-                default: return i;
-            }
+                short s => Math.Sign(s) * order,
+                int i32 => Math.Sign(i32) * order,
+                long l => Math.Sign(l) * order,
+                sbyte sby => Math.Sign(sby) * order,
+                float f => Math.Sign(f) * order,
+                double d => Math.Sign(d) * order,
+                decimal de => Math.Sign(de) * order,
+                _ => order
+            };
         }
 
         /// <summary>
@@ -1049,23 +1049,21 @@ namespace System.Management.Automation
             => obj != null ? PSObject.AsPSObject(obj) : null;
 
         internal static int TypeTableIndex(Type type)
-        {
-            switch (LanguagePrimitives.GetTypeCode(type))
+            => GetTypeCode(type) switch
             {
-                case TypeCode.Int16: return 0;
-                case TypeCode.Int32: return 1;
-                case TypeCode.Int64: return 2;
-                case TypeCode.UInt16: return 3;
-                case TypeCode.UInt32: return 4;
-                case TypeCode.UInt64: return 5;
-                case TypeCode.SByte: return 6;
-                case TypeCode.Byte: return 7;
-                case TypeCode.Single: return 8;
-                case TypeCode.Double: return 9;
-                case TypeCode.Decimal: return 10;
-                default: return -1;
-            }
-        }
+                TypeCode.Int16 => 0,
+                TypeCode.Int32 => 1,
+                TypeCode.Int64 => 2,
+                TypeCode.UInt16 => 3,
+                TypeCode.UInt32 => 4,
+                TypeCode.UInt64 => 5,
+                TypeCode.SByte => 6,
+                TypeCode.Byte => 7,
+                TypeCode.Single => 8,
+                TypeCode.Double => 9,
+                TypeCode.Decimal => 10,
+                _ => -1
+            };
 
         /// <summary>
         /// Table of the largest safe type to which both types can be converted without exceptions.
