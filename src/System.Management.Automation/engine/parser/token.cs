@@ -585,7 +585,7 @@ namespace System.Management.Automation.Language
         /// <summary>The 'base' keyword</summary>
         Base = 168,
 
-        /// <summary>The 'dispose' keyword.</summary>
+        /// <summary>The 'cleanup' keyword.</summary>
         Cleanup = 169,
 
         #endregion Keywords
@@ -659,7 +659,7 @@ namespace System.Management.Automation.Language
         Keyword = 0x00000010,
 
         /// <summary>
-        /// The token one of the keywords that is a part of a script block: 'begin', 'process', 'end', or 'dynamicparam'.
+        /// The token one of the keywords that is a part of a script block: 'begin', 'process', 'end', 'cleanup', or 'dynamicparam'.
         /// </summary>
         ScriptBlockBlockName = 0x00000020,
 
@@ -947,7 +947,7 @@ namespace System.Management.Automation.Language
             /*              Command */ TokenFlags.Keyword,
             /*               Hidden */ TokenFlags.Keyword,
             /*                 Base */ TokenFlags.Keyword,
-            /*              Dispose */ TokenFlags.Keyword | TokenFlags.ScriptBlockBlockName,
+            /*              Cleanup */ TokenFlags.Keyword | TokenFlags.ScriptBlockBlockName,
 
             #endregion Flags for keywords
         };
@@ -1146,7 +1146,7 @@ namespace System.Management.Automation.Language
             /*              Command */ "command",
             /*               Hidden */ "hidden",
             /*                 Base */ "base",
-            /*              Dispose */ "dispose",
+            /*              Cleanup */ "cleanup",
 
             #endregion Text for keywords
         };
